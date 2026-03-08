@@ -1,0 +1,44 @@
+# --- General / OS ---
+.DS_Store
+Thumbs.db
+*.log
+*.swp
+*.bak
+
+# --- Backend (Python / FastAPI) ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+.env
+.pytest_cache/
+.mypy_cache/
+
+# --- Frontend (Svelte / Node.js) ---
+node_modules/
+dist/
+.svelte-kit/
+build/
+.vercel/
+.npm
+package-lock.json
+# Keep package-lock.json if you prefer deterministic builds, 
+# but many homelab devs ignore it for small internal projects.
+
+# --- Docker & Homelab ---
+.docker-temp/
+docker-compose.override.yml
+data/
+config/
+# Ignore local DB files if using SQLite for config storage
+*.db
+*.sqlite3
+
+# --- IDEs ---
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
