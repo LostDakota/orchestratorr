@@ -269,3 +269,33 @@ class RadarrClient(BaseArrClient):
         """
         params = {"deleteFiles": str(delete_files).lower()}
         await self.delete(f"/api/v3/movie/{movie_id}", params=params)
+
+    async def search_movies(self, query: str) -> list[dict[str, Any]]:
+        """
+        Search for movies using TMDB lookup.
+
+        Uses the /api/v3/movie/lookup endpoint to search for movies
+        by title or other metadata.
+
+        Args:
+            query (str): Search query (movie title)
+
+        Returns:
+            list: List of matching movies from TMDB, including:
+                - title: Movie title
+                - year: Release year
+                - tmdbId: TMDB database ID
+                - overview: Plot summary
+                - images: Poster URLs
+
+        Raises:
+            HTTPException: If the request fails
+
+        Example:
+            results = await client.search_movies("The Matrix")
+            for movie in results:
+                print(f"{movie['title']} ({movie['year']})")
+        """
+        params = {"term": query}
+        response = await self.get("/api/v3/movie/lookup", params=params)
+        return response.json()
