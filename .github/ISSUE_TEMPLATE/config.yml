@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📚 Documentation
+    url: https://github.com/LostDakota/orchestratorr#readme
+    about: Check the README for installation, configuration, and usage instructions
+  - name: 💬 Discussions
+    url: https://github.com/LostDakota/orchestratorr/discussions
+    about: Ask questions, share ideas, or discuss the project (if enabled)
+  - name: ❓ Need Help?
+    url: https://github.com/LostDakota/orchestratorr/issues/new/choose
+    about: File an issue if you need help troubleshooting
