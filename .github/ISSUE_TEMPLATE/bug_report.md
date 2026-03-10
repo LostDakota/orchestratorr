@@ -2,6 +2,7 @@
 name: 🐛 Bug Report
 description: Report a bug or unexpected behavior in Orchestratorr
 title: "[Bug]: "
+about: "Found a bug? Report it here so we can squash it!"
 labels: ["bug", "needs-triage"]
 assignees: []
 ---
