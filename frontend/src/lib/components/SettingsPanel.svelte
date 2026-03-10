@@ -14,34 +14,7 @@ Settings include backend URL, theme, refresh interval, and advanced options.
 	let tempConfig = { ...configStore };
 	let hasChanges = false;
 
-	// Control body overflow when modal is open (browser only)
-	let cleanupClass = () => {};
 	
-	onMount(() => {
-		if (typeof document === 'undefined') return;
-		
-		cleanupClass = () => {
-			document.body.classList.remove('modal-open');
-		};
-		
-		// Set initial state
-		if (isOpen) {
-			document.body.classList.add('modal-open');
-		}
-	});
-
-	onDestroy(() => {
-		cleanupClass();
-	});
-
-	// Watch isOpen changes after mount
-	$: if (typeof document !== 'undefined' && isOpen !== undefined) {
-		if (isOpen) {
-			document.body.classList.add('modal-open');
-		} else {
-			document.body.classList.remove('modal-open');
-		}
-	}
 
 	/**
 	 * Load current config on mount
@@ -423,7 +396,5 @@ Settings include backend URL, theme, refresh interval, and advanced options.
 	.btn-danger:hover {
 		background-color: #dc2626;
 	}
-:global(body.modal-open) {
-		overflow: hidden;
-	}
+
 </style>
