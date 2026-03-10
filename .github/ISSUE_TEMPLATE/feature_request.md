@@ -2,6 +2,7 @@
 name: ✨ Feature Request
 description: Suggest a new feature or enhancement for Orchestratorr
 title: "[Feature]: "
+about: "Tell us about your fancy new feature idea"
 labels: ["enhancement", "needs-triage"]
 assignees: []
 ---
