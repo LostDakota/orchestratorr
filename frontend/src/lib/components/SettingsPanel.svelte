@@ -7,11 +7,25 @@ Settings include backend URL, theme, refresh interval, and advanced options.
 
 <script>
 	import { configStore, resetConfig, setBackendUrl } from '../stores/appStore';
-	import { onMount } from 'svelte';
+	import { get } from 'svelte/store';
+	import { onMount, onDestroy } from 'svelte';
 
 	let isOpen = false;
 	let tempConfig = { ...configStore };
 	let hasChanges = false;
+
+	// Control body overflow when modal is open
+	$: if (typeof document !== 'undefined') {
+		if (isOpen) {
+			document.body.classList.add('modal-open');
+		} else {
+			document.body.classList.remove('modal-open');
+		}
+	}
+
+	onDestroy(() => {
+		document.body.classList.remove('modal-open');
+	});
 
 	/**
 	 * Load current config on mount
@@ -52,9 +66,8 @@ Settings include backend URL, theme, refresh interval, and advanced options.
 	 * Cancel changes
 	 */
 	function cancelChanges() {
-		configStore.subscribe((config) => {
-			tempConfig = { ...config };
-		});
+		// Revert to current store value
+		tempConfig = { ...get(configStore) };
 		hasChanges = false;
 	}
 
@@ -203,15 +216,16 @@ Settings include backend URL, theme, refresh interval, and advanced options.
 
 	.modal-overlay {
 		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
+		inset: 0;
+		width: 100vw;
+		height: 100vh;
 		background-color: rgba(0, 0, 0, 0.5);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		z-index: 1000;
+		overflow: hidden;
+		transform: translateZ(0);
 	}
 
 	.modal {
@@ -368,5 +382,8 @@ Settings include backend URL, theme, refresh interval, and advanced options.
 
 	.btn-danger:hover {
 		background-color: #dc2626;
+	}
+:global(body.modal-open) {
+		overflow: hidden;
 	}
 </style>
