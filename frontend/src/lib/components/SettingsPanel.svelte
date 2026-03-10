@@ -224,7 +224,7 @@ Settings include backend URL, theme, refresh interval, and advanced options.
 		align-items: center;
 		justify-content: center;
 		z-index: 1000;
-		overflow: auto;
+		overflow: hidden;
 		transform: translateZ(0);
 	}
 
