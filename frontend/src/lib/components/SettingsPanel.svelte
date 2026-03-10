@@ -71,6 +71,16 @@ Settings include backend URL, theme, refresh interval, and advanced options.
 		hasChanges = false;
 	}
 
+	/**
+	 * Handle keyboard events on modal overlay
+	 */
+	function handleOverlayKey(event) {
+		if (event.key === 'Enter' || event.key === ' ') {
+			event.preventDefault();
+			isOpen = false;
+		}
+	}
+
 	onMount(() => {
 		return unsubscribe;
 	});
@@ -88,8 +98,22 @@ Settings include backend URL, theme, refresh interval, and advanced options.
 
 	<!-- Settings Modal -->
 	{#if isOpen}
-		<div class="modal-overlay" on:click={() => (isOpen = false)}>
-			<div class="modal" on:click={(e) => e.stopPropagation()}>
+		<div
+			class="modal-overlay"
+			on:click={() => (isOpen = false)}
+			role="button"
+			aria-label="Close modal"
+			tabindex="0"
+			on:keydown={handleOverlayKey}
+		>
+			<div
+				class="modal"
+				role="dialog"
+				aria-label="Application Settings"
+				tabindex="-1"
+				on:click={(e) => e.stopPropagation()}
+				on:keydown={(e) => e.stopPropagation()}
+			>
 				<!-- Header -->
 				<div class="modal-header">
 					<h2>Application Settings</h2>

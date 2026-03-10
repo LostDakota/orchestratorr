@@ -50,6 +50,7 @@ Supports three states: online (green, pulsing), offline (red, static), and degra
 		},
 	};
 
+	// @ts-ignore
 	$: config = statusConfig[status] || statusConfig.unknown;
 </script>
 
@@ -60,11 +61,11 @@ Supports three states: online (green, pulsing), offline (red, static), and degra
 			class="absolute inset-0 rounded-full {config.dot} {config.pulse
 				? 'animate-pulse'
 				: ''}"
-		/>
+		></div>
 		{#if config.pulse}
 			<div
 				class="absolute inset-0 rounded-full {config.dot} opacity-75 animate-ping"
-			/>
+			></div>
 		{/if}
 	</div>
 
