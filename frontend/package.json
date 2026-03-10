@@ -3,17 +3,25 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
     "test": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json"
   },
   "dependencies": {
+    "@sveltejs/adapter-auto": "^7.0.1",
+    "@sveltejs/kit": "^2.53.4",
     "@sveltejs/vite-plugin-svelte": "^3.1.1",
     "@testing-library/svelte": "^5.1.4",
-    "jsdom": "^25.0.0"
+    "jsdom": "^25.0.0",
+    "vite": "^5.4.21"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.0.18",
     "svelte": "^5.0.0",
+    "svelte-check": "^4.4.5",
     "vitest": "^4.0.18"
   }
 }
