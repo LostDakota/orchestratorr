@@ -14,18 +14,34 @@ Settings include backend URL, theme, refresh interval, and advanced options.
 	let tempConfig = { ...configStore };
 	let hasChanges = false;
 
-	// Control body overflow when modal is open
-	$: if (typeof document !== 'undefined') {
+	// Control body overflow when modal is open (browser only)
+	let cleanupClass = () => {};
+	
+	onMount(() => {
+		if (typeof document === 'undefined') return;
+		
+		cleanupClass = () => {
+			document.body.classList.remove('modal-open');
+		};
+		
+		// Set initial state
+		if (isOpen) {
+			document.body.classList.add('modal-open');
+		}
+	});
+
+	onDestroy(() => {
+		cleanupClass();
+	});
+
+	// Watch isOpen changes after mount
+	$: if (typeof document !== 'undefined' && isOpen !== undefined) {
 		if (isOpen) {
 			document.body.classList.add('modal-open');
 		} else {
 			document.body.classList.remove('modal-open');
 		}
 	}
-
-	onDestroy(() => {
-		document.body.classList.remove('modal-open');
-	});
 
 	/**
 	 * Load current config on mount
@@ -56,7 +72,7 @@ Settings include backend URL, theme, refresh interval, and advanced options.
 	 * Reset to defaults
 	 */
 	function resetToDefaults() {
-		if (window.confirm('Reset all settings to defaults?')) {
+		if (typeof window !== 'undefined' && window.confirm('Reset all settings to defaults?')) {
 			resetConfig();
 			hasChanges = false;
 		}
