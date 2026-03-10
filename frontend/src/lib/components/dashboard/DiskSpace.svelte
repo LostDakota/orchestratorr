@@ -74,7 +74,7 @@ Shows available vs total space with percentage.
 			<div
 				class="{statusColor} h-full rounded-full transition-all duration-300"
 				style="width: {percentageUsed}%"
-			/>
+			></div>
 		</div>
 	</div>
 

@@ -205,6 +205,6 @@ Auto-refreshes every 30 seconds and shows a global alert if the backend is unrea
 
 <style>
 	:global(body) {
-		@apply bg-gray-900;
+		background-color: #111827;
 	}
 </style>
