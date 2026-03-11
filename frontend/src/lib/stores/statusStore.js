@@ -11,7 +11,15 @@
 import { writable, derived } from 'svelte/store';
 
 const POLL_INTERVAL = 30000; // 30 seconds
-const API_BASE = 'http://localhost:8000/api/v1'; // FastAPI backend URL
+const getApiBase = () => {
+	if (import.meta.env.VITE_API_BASE !== undefined) {
+		// If defined (including empty string), use it
+		const base = import.meta.env.VITE_API_BASE;
+		return base ? base + '/api/v1' : '/api/v1';
+	}
+	return 'http://localhost:8000/api/v1';
+};
+const API_BASE = getApiBase(); // FastAPI backend URL
 
 /**
  * Service status store.

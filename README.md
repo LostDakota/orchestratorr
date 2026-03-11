@@ -106,6 +106,105 @@ npm run dev
 - 🔌 Backend API: http://localhost:8000
 - 📚 API Docs: http://localhost:8000/docs
 
+## 🐳 Docker Deployment
+
+Orchestratorr can be run entirely via Docker Compose for easy deployment.
+
+### Prerequisites
+- Docker Engine 20.10+
+- Docker Compose 2.0+
+
+### Quick Start with Docker
+
+1. **Clone and configure**:
+   ```bash
+   git clone https://github.com/LostDakota/orchestratorr.git
+   cd orchestratorr
+   cp .env.example .env
+   # Edit .env and add your *arr service URLs and API keys
+   ```
+
+2. **Start with Docker Compose**:
+   ```bash
+   docker-compose up -d
+   ```
+
+3. **Access the dashboard**:
+   - 🌐 Frontend: http://localhost:80
+   - 🔌 Backend API: http://localhost:8000
+   - 📚 API Docs: http://localhost:8000/docs
+
+4. **View logs**:
+   ```bash
+   docker-compose logs -f
+   ```
+
+5. **Stop services**:
+   ```bash
+   docker-compose down
+   ```
+
+### Docker Compose Configuration
+
+The `docker-compose.yml` file defines two services:
+
+- **backend**: FastAPI application on port 8000
+- **frontend**: Nginx serving SvelteKit static files on port 80
+
+Nginx proxies `/api/*` requests to the backend, allowing the frontend to make relative API calls.
+
+### Environment Variables
+
+Create a `.env` file in the project root with your *arr service configurations:
+
+```bash
+# Radarr (REQUIRED)
+RADARR_URL=http://localhost:7878
+RADARR_API_KEY=your_radarr_api_key_here
+
+# Sonarr (Optional)
+SONARR_URL=http://localhost:8989
+SONARR_API_KEY=your_sonarr_api_key_here
+
+# Lidarr (Optional)
+LIDARR_URL=http://localhost:8686
+LIDARR_API_KEY=your_lidarr_api_key_here
+
+# Prowlarr (Optional)
+PROWLARR_URL=http://localhost:9696
+PROWLARR_API_KEY=your_prowlarr_api_key_here
+
+# Backend Configuration (Docker defaults)
+FASTAPI_HOST=0.0.0.0
+FASTAPI_PORT=8000
+LOG_LEVEL=INFO
+```
+
+### Building Images Manually
+
+You can also build Docker images individually:
+
+```bash
+# Build backend
+cd backend
+docker build -t orchestratorr-backend .
+
+# Build frontend
+cd frontend
+docker build -t orchestratorr-frontend --build-arg VITE_API_BASE="" .
+```
+
+### Docker Compose Commands
+
+| Command | Description |
+|---------|-------------|
+| `docker-compose up -d` | Start services in background |
+| `docker-compose down` | Stop and remove containers |
+| `docker-compose logs -f` | Follow logs |
+| `docker-compose ps` | Show service status |
+| `docker-compose build` | Rebuild images |
+| `docker-compose restart` | Restart services |
+
 ## 📁 Project Structure
 
 ```
