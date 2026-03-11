@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: orchestratorr-backend
+    restart: unless-stopped
+    environment:
+      - FASTAPI_HOST=0.0.0.0
+      - FASTAPI_PORT=8000
+      - FASTAPI_RELOAD=false
+      - LOG_LEVEL=INFO
+      # *arr service URLs and API keys should be set via environment or .env file
+    env_file:
+      - .env
+    volumes:
+      # Optional: mount local configuration or data
+      - ./backend:/app:ro
+    ports:
+      - "8000:8000"
+    networks:
+      - orchestratorr-net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE: ""  # Use relative paths, nginx will proxy /api to backend
+    container_name: orchestratorr-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - orchestratorr-net
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+networks:
+  orchestratorr-net:
+    driver: bridge
+
+# Volumes (optional)
+# volumes:
+#   postgres_data:

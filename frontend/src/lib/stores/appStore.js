@@ -86,8 +86,16 @@ function clearLocalStorage(key) {
  *   showAdvanced: boolean
  * }>}
  */
+const getEnvApiBase = () => {
+	// Check if VITE_API_BASE is defined (including empty string)
+	if (import.meta.env.VITE_API_BASE !== undefined) {
+		return import.meta.env.VITE_API_BASE;
+	}
+	return 'http://localhost:8000';
+};
+
 export const configStore = createLocalStorageStore('config', {
-	backendUrl: 'http://localhost:8000',
+	backendUrl: getEnvApiBase(),
 	theme: 'dark',
 	refreshInterval: 30,
 	showAdvanced: false,
@@ -123,7 +131,7 @@ export function setBackendUrl(url) {
  */
 export function resetConfig() {
 	configStore.set({
-		backendUrl: 'http://localhost:8000',
+		backendUrl: getEnvApiBase(),
 		theme: 'dark',
 		refreshInterval: 30,
 		showAdvanced: false,
