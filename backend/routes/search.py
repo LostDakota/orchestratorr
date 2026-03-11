@@ -15,6 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from backend.clients.radarr import RadarrClient
 from backend.clients.sonarr import SonarrClient
+from backend.clients.lidarr import LidarrClient
 
 logger = logging.getLogger(__name__)
 
@@ -123,6 +124,20 @@ def get_sonarr_client() -> SonarrClient:
     return SonarrClient(base_url=sonarr_url, api_key=sonarr_key)
 
 
+def get_lidarr_client() -> Optional[LidarrClient]:
+    """Dependency injection for LidarrClient."""
+    import os
+
+    lidarr_url = os.getenv("LIDARR_URL")
+    lidarr_key = os.getenv("LIDARR_API_KEY")
+
+    if not lidarr_url or not lidarr_key:
+        # Lidarr is optional; return None if not configured
+        return None
+
+    return LidarrClient(base_url=lidarr_url, api_key=lidarr_key)
+
+
 # ============================================================================
 # Search Handlers
 # ============================================================================
@@ -224,20 +239,51 @@ async def search_sonarr(client: Optional[SonarrClient], query: str) -> List[Sear
         return []
 
 
-async def search_lidarr(query: str) -> List[SearchResult]:
+async def search_lidarr(client: Optional[LidarrClient], query: str) -> List[SearchResult]:
     """
-    Search Lidarr for music.
+    Search Lidarr for music artists.
 
     Args:
+        client: LidarrClient instance (can be None if not configured)
         query: Search query string
 
     Returns:
         List of SearchResult objects from Lidarr
     """
     try:
-        # TODO: Implement Lidarr search when LidarrClient is available
+        if not client:
+            logger.debug("Lidarr not configured")
+            return []
+
         logger.debug(f"Lidarr search for: {query}")
+        artists = await client.search_artists(query)
+
         results = []
+        for artist in artists:
+            poster_url = None
+            if "images" in artist and isinstance(artist["images"], list):
+                for img in artist["images"]:
+                    if img.get("coverType") == "poster" and img.get("url"):
+                        poster_url = img["url"]
+                        break
+
+            result = SearchResult(
+                title=artist.get("artistName", "Unknown"),
+                year=artist.get("year"),
+                overview=artist.get("overview"),
+                source_service="lidarr",
+                source_type="music",
+                remote_id=artist.get("foreignArtistId", artist.get("id")),
+                # Lidarr uses foreignArtistId (MusicBrainz ID) not tmdbId
+                tmdb_id=None,
+                imdb_id=None,
+                poster_url=poster_url,
+                status="missing",  # Default; would need to check if in library
+                in_library=False,  # Would need to check against library
+            )
+            results.append(result)
+
+        logger.debug(f"Found {len(results)} artists from Lidarr")
         return results
     except Exception as e:
         logger.error(f"Lidarr search failed: {str(e)}")
@@ -254,12 +300,13 @@ async def universal_search(
     q: str = Query(..., min_length=2, description="Search query"),
     radarr: RadarrClient = Depends(get_radarr_client),
     sonarr: Optional[SonarrClient] = Depends(get_sonarr_client),
+    lidarr: Optional[LidarrClient] = Depends(get_lidarr_client),
     limit: int = Query(20, ge=1, le=100, description="Max results per service"),
 ) -> dict:
     """
     Universal search across all *arr services.
 
-    Simultaneously queries Radarr (movies) and Sonarr (TV shows) for matching content.
+    Simultaneously queries Radarr (movies), Sonarr (TV shows), and Lidarr (music) for matching content.
     Results are normalized into a unified format and sorted by relevance/year.
 
     Query Parameters:
@@ -297,7 +344,7 @@ async def universal_search(
     radarr_results, sonarr_results, lidarr_results = await asyncio.gather(
         search_radarr(radarr, q),
         search_sonarr(sonarr, q),
-        search_lidarr(q),
+        search_lidarr(lidarr, q),
         return_exceptions=True,
     )
 
@@ -409,6 +456,7 @@ async def search_tv(
 @router.get("/music")
 async def search_music(
     q: str = Query(..., min_length=2, description="Search query"),
+    lidarr: Optional[LidarrClient] = Depends(get_lidarr_client),
     limit: int = Query(20, ge=1, le=100, description="Max results"),
 ) -> dict:
     """
@@ -427,7 +475,7 @@ async def search_music(
     if not q or len(q.strip()) < 2:
         raise HTTPException(status_code=400, detail="Query must be at least 2 characters")
 
-    results = await search_lidarr(q)
+    results = await search_lidarr(lidarr, q)
     results = results[:limit]
 
     from datetime import datetime, timezone

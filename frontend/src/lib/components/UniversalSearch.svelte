@@ -1,13 +1,14 @@
 <script>
 	import { onMount } from 'svelte';
-	import { Search, X, Loader2, Film, Tv } from 'lucide-svelte';
-	import { getBackendUrl } from '../stores/appStore.js';
+	import { Search, X, Loader2, Film, Tv, Music, CheckCircle, AlertCircle } from 'lucide-svelte';
+	import { getBackendUrl, addNotification } from '../stores/appStore.js';
 
 	let searchQuery = '';
 	let results = [];
 	let loading = false;
 	let showResults = false;
 	let error = null;
+	let addingId = null; // Track which result is being added
 	let debounceTimer = null;
 
 	// Debounce delay in milliseconds
@@ -84,12 +85,85 @@
 	}
 
 	/**
-	 * Handle result selection (placeholder for now)
+	 * Handle result selection - add to appropriate library
 	 */
-	function selectResult(result) {
-		console.log('Selected result:', result);
-		// TODO: Implement add-to-library functionality
-		closeResults();
+	async function selectResult(result) {
+		if (addingId === result.remote_id) return; // Already adding
+		
+		addingId = result.remote_id;
+		
+		try {
+			const backendUrl = getBackendUrl();
+			let response;
+			
+			if (result.source_service === 'radarr') {
+				// Add movie to Radarr
+				response = await fetch(`${backendUrl}/api/v1/proxy/radarr/movies`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						tmdb_id: result.tmdb_id,
+						title: result.title,
+						quality_profile_id: 1, // Default quality profile
+						root_folder_path: '/movies', // Default path
+						monitored: true
+					})
+				});
+			} else if (result.source_service === 'sonarr') {
+				// Add TV series to Sonarr
+				response = await fetch(`${backendUrl}/api/v1/proxy/sonarr/series`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						tvdb_id: result.tmdb_id, // Sonarr uses TVDB ID
+						title: result.title,
+						quality_profile_id: 1,
+						root_folder_path: '/tv',
+						monitored: true
+					})
+				});
+			} else if (result.source_service === 'lidarr') {
+				// Add music artist to Lidarr
+				response = await fetch(`${backendUrl}/api/v1/proxy/lidarr/artists`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						foreign_artist_id: result.remote_id?.toString(), // Use remote_id as foreign ID
+						artist_name: result.title,
+						quality_profile_id: 1,
+						root_folder_path: '/music',
+						monitored: true
+					})
+				});
+			} else {
+				throw new Error(`Unsupported service: ${result.source_service}`);
+			}
+			
+			if (!response.ok) {
+				const errorText = await response.text();
+				throw new Error(`Failed to add ${result.source_type}: ${response.status} ${errorText}`);
+			}
+			
+			const addedItem = await response.json();
+			console.log('Added successfully:', addedItem);
+			
+			// Update result status in UI
+			const resultIndex = results.findIndex(r => r.remote_id === result.remote_id);
+			if (resultIndex !== -1) {
+				results[resultIndex].in_library = true;
+				results = [...results]; // Trigger reactive update
+			}
+			
+			// Show success notification
+			addNotification(`Added "${result.title}" to library`, 'success');
+			
+		} catch (err) {
+			console.error('Add to library failed:', err);
+			addNotification(`Failed to add "${result.title}": ${err.message}`, 'error');
+		} finally {
+			addingId = null;
+			closeResults();
+		}
 	}
 
 	// Close dropdown when clicking outside
@@ -151,8 +225,10 @@
 					{#each results as result (result.tmdb_id || result.title)}
 						<button
 							on:click={() => selectResult(result)}
+							disabled={addingId === result.remote_id || result.in_library}
 							class="w-full px-4 py-3 flex items-start gap-3 border-b border-slate-700
-                                   hover:bg-slate-800 transition-colors text-left last:border-b-0"
+                                   hover:bg-slate-800 transition-colors text-left last:border-b-0
+                                   disabled:opacity-50 disabled:cursor-not-allowed"
 						>
 							<!-- Poster Thumbnail -->
 							{#if result.poster_url}
@@ -168,8 +244,12 @@
 								>
 									{#if result.source_type === 'movie'}
 										<Film size={20} class="text-slate-500" />
-									{:else}
+									{:else if result.source_type === 'tv'}
 										<Tv size={20} class="text-slate-500" />
+									{:else if result.source_type === 'music'}
+										<Music size={20} class="text-slate-500" />
+									{:else}
+										<Film size={20} class="text-slate-500" />
 									{/if}
 								</div>
 							{/if}
@@ -190,10 +270,12 @@
                                        ${
 											result.source_type === 'movie'
 												? 'bg-blue-900 text-blue-200'
-												: 'bg-purple-900 text-purple-200'
+												: result.source_type === 'tv'
+													? 'bg-purple-900 text-purple-200'
+													: 'bg-green-900 text-green-200'
 										}`}
 									>
-										{result.source_type === 'movie' ? '🎬 Movie' : '📺 TV'}
+										{result.source_type === 'movie' ? '🎬 Movie' : result.source_type === 'tv' ? '📺 TV' : '🎵 Music'}
 									</span>
 									<span class="text-slate-500 text-xs capitalize">
 										{result.source_service}
@@ -201,7 +283,12 @@
 								</div>
 
 								<!-- Status -->
-								{#if result.in_library}
+								{#if addingId === result.remote_id}
+									<p class="text-blue-400 text-xs mt-1 flex items-center gap-1">
+										<Loader2 size={12} class="animate-spin" />
+										Adding...
+									</p>
+								{:else if result.in_library}
 									<p class="text-green-400 text-xs mt-1">✓ In Library</p>
 								{:else}
 									<p class="text-yellow-400 text-xs mt-1">+ Add to Library</p>
