@@ -8,7 +8,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install all dependencies (including dev dependencies for build)
-RUN npm ci
+RUN npm install
 
 # Install static adapter for SvelteKit (required for nginx static hosting)
 RUN npm install @sveltejs/adapter-static
