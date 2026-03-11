@@ -15,6 +15,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 
 from backend.clients.radarr import RadarrClient
+from backend.clients.sonarr import SonarrClient
+from backend.clients.lidarr import LidarrClient
+from backend.clients.prowlarr import ProwlarrClient
 from backend.config import settings
 
 logger = logging.getLogger(__name__)
@@ -50,43 +53,55 @@ def get_radarr_client() -> RadarrClient:
     return RadarrClient(base_url=settings.radarr_url, api_key=settings.radarr_api_key)
 
 
-def get_sonarr_client() -> Optional[RadarrClient]:
+def get_sonarr_client() -> Optional[SonarrClient]:
     """
-    Dependency injection for Sonarr client (placeholder).
+    Dependency injection for SonarrClient.
 
-    Currently returns None. Implement when Sonarr client is available.
+    Reads configuration from environment variables (via settings) and instantiates
+    a SonarrClient with the appropriate base URL and API key.
 
     Returns:
-        None
+        SonarrClient: Configured async client for Sonarr API, or None if not configured
     """
-    # TODO: Implement SonarrClient
-    return None
+    if not settings.sonarr_url or not settings.sonarr_api_key:
+        logger.debug("Sonarr not configured (SONARR_URL or SONARR_API_KEY missing)")
+        return None
+
+    return SonarrClient(base_url=settings.sonarr_url, api_key=settings.sonarr_api_key)
 
 
-def get_lidarr_client() -> Optional[RadarrClient]:
+def get_lidarr_client() -> Optional[LidarrClient]:
     """
-    Dependency injection for Lidarr client (placeholder).
+    Dependency injection for LidarrClient.
 
-    Currently returns None. Implement when Lidarr client is available.
+    Reads configuration from environment variables (via settings) and instantiates
+    a LidarrClient with the appropriate base URL and API key.
 
     Returns:
-        None
+        LidarrClient: Configured async client for Lidarr API, or None if not configured
     """
-    # TODO: Implement LidarrClient
-    return None
+    if not settings.lidarr_url or not settings.lidarr_api_key:
+        logger.debug("Lidarr not configured (LIDARR_URL or LIDARR_API_KEY missing)")
+        return None
+
+    return LidarrClient(base_url=settings.lidarr_url, api_key=settings.lidarr_api_key)
 
 
-def get_prowlarr_client() -> Optional[RadarrClient]:
+def get_prowlarr_client() -> Optional[ProwlarrClient]:
     """
-    Dependency injection for Prowlarr client (placeholder).
+    Dependency injection for ProwlarrClient.
 
-    Currently returns None. Implement when Prowlarr client is available.
+    Reads configuration from environment variables (via settings) and instantiates
+    a ProwlarrClient with the appropriate base URL and API key.
 
     Returns:
-        None
+        ProwlarrClient: Configured async client for Prowlarr API, or None if not configured
     """
-    # TODO: ImplementProwlarrClient
-    return None
+    if not settings.prowlarr_url or not settings.prowlarr_api_key:
+        logger.debug("Prowlarr not configured (PROWLARR_URL or PROWLARR_API_KEY missing)")
+        return None
+
+    return ProwlarrClient(base_url=settings.prowlarr_url, api_key=settings.prowlarr_api_key)
 
 
 # ============================================================================
@@ -456,4 +471,405 @@ async def radarr_delete_movie(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to delete movie: {str(e)}",
+        )
+
+
+# ============================================================================
+# Sonarr Routes
+# ============================================================================
+
+
+@router.get("/sonarr/status")
+async def get_sonarr_status(
+    sonarr: Optional[SonarrClient] = Depends(get_sonarr_client),
+) -> dict:
+    """
+    Get Sonarr system status and version information.
+
+    Returns:
+        dict: Sonarr status response (see SonarrClient.get_status())
+
+    Raises:
+        HTTPException: If Sonarr is unreachable or returns an error
+    """
+    if not sonarr:
+        raise HTTPException(status_code=503, detail="Sonarr not configured")
+    try:
+        return await sonarr.get_status()
+    except Exception as e:
+        logger.error(f"Sonarr status request failed: {str(e)}")
+        raise
+
+
+@router.get("/sonarr/series")
+async def get_sonarr_series(
+    sonarr: Optional[SonarrClient] = Depends(get_sonarr_client),
+    search: Optional[str] = Query(None, description="Search term for series title"),
+    monitored: Optional[bool] = Query(None, description="Filter by monitored status"),
+    status: Optional[str] = Query(
+        None, description="Filter by status (Continuing, Ended, etc.)"
+    ),
+) -> list | dict:
+    """
+    Get Sonarr series library with optional filtering.
+
+    Query Parameters:
+    - search (str): Filter series by title (case-insensitive substring match)
+    - monitored (bool): Filter by monitored status (true/false)
+    - status (str): Filter by status (Continuing, Ended, etc.)
+
+    Returns:
+        list: List of series matching the filters
+
+    Example:
+        GET /api/v1/proxy/sonarr/series?monitored=true&status=Continuing
+
+    Raises:
+        HTTPException: If Sonarr is unreachable or returns an error
+    """
+    if not sonarr:
+        raise HTTPException(status_code=503, detail="Sonarr not configured")
+    try:
+        series = await sonarr.get_series()
+
+        # If no filters, return all series
+        if not any([search, monitored is not None, status]):
+            return series
+
+        # Apply filters
+        filtered = series
+        if search:
+            search_lower = search.lower()
+            filtered = [s for s in filtered if search_lower in s.get("title", "").lower()]
+
+        if monitored is not None:
+            filtered = [s for s in filtered if s.get("monitored") == monitored]
+
+        if status:
+            filtered = [s for s in filtered if s.get("status") == status]
+
+        return filtered
+
+    except Exception as e:
+        logger.error(f"Sonarr series list request failed: {str(e)}")
+        raise
+
+
+@router.get("/sonarr/series/{series_id}")
+async def get_sonarr_series_by_id(
+    series_id: int,
+    sonarr: Optional[SonarrClient] = Depends(get_sonarr_client),
+) -> dict:
+    """
+    Get a specific Sonarr series by ID.
+
+    Parameters:
+        series_id (int): Sonarr internal series ID
+
+    Returns:
+        dict: Series object with full metadata
+
+    Raises:
+        HTTPException: If series not found or Sonarr is unreachable
+    """
+    if not sonarr:
+        raise HTTPException(status_code=503, detail="Sonarr not configured")
+    try:
+        return await sonarr.get_series(series_id=series_id)
+    except Exception as e:
+        logger.error(f"Sonarr series detail request failed: {str(e)}")
+        raise
+
+
+# ============================================================================
+# Lidarr Routes
+# ============================================================================
+
+
+@router.get("/lidarr/status")
+async def get_lidarr_status(
+    lidarr: Optional[LidarrClient] = Depends(get_lidarr_client),
+) -> dict:
+    """
+    Get Lidarr system status and version information.
+
+    Returns:
+        dict: Lidarr status response (see LidarrClient.get_status())
+
+    Raises:
+        HTTPException: If Lidarr is unreachable or returns an error
+    """
+    if not lidarr:
+        raise HTTPException(status_code=503, detail="Lidarr not configured")
+    try:
+        return await lidarr.get_status()
+    except Exception as e:
+        logger.error(f"Lidarr status request failed: {str(e)}")
+        raise
+
+
+@router.get("/lidarr/artists")
+async def get_lidarr_artists(
+    lidarr: Optional[LidarrClient] = Depends(get_lidarr_client),
+    search: Optional[str] = Query(None, description="Search term for artist name"),
+    monitored: Optional[bool] = Query(None, description="Filter by monitored status"),
+) -> list | dict:
+    """
+    Get Lidarr artist library with optional filtering.
+
+    Query Parameters:
+    - search (str): Filter artists by name (case-insensitive substring match)
+    - monitored (bool): Filter by monitored status (true/false)
+
+    Returns:
+        list: List of artists matching the filters
+
+    Example:
+        GET /api/v1/proxy/lidarr/artists?monitored=true
+
+    Raises:
+        HTTPException: If Lidarr is unreachable or returns an error
+    """
+    if not lidarr:
+        raise HTTPException(status_code=503, detail="Lidarr not configured")
+    try:
+        artists = await lidarr.get_artists()
+
+        # If no filters, return all artists
+        if not any([search, monitored is not None]):
+            return artists
+
+        # Apply filters
+        filtered = artists
+        if search:
+            search_lower = search.lower()
+            filtered = [a for a in filtered if search_lower in a.get("artistName", "").lower()]
+
+        if monitored is not None:
+            filtered = [a for a in filtered if a.get("monitored") == monitored]
+
+        return filtered
+
+    except Exception as e:
+        logger.error(f"Lidarr artists list request failed: {str(e)}")
+        raise
+
+
+@router.get("/lidarr/artists/{artist_id}")
+async def get_lidarr_artist_by_id(
+    artist_id: int,
+    lidarr: Optional[LidarrClient] = Depends(get_lidarr_client),
+) -> dict:
+    """
+    Get a specific Lidarr artist by ID.
+
+    Parameters:
+        artist_id (int): Lidarr internal artist ID
+
+    Returns:
+        dict: Artist object with full metadata
+
+    Raises:
+        HTTPException: If artist not found or Lidarr is unreachable
+    """
+    if not lidarr:
+        raise HTTPException(status_code=503, detail="Lidarr not configured")
+    try:
+        return await lidarr.get_artists(artist_id=artist_id)
+    except Exception as e:
+        logger.error(f"Lidarr artist detail request failed: {str(e)}")
+        raise
+
+
+# ============================================================================
+# Prowlarr Routes
+# ============================================================================
+
+
+@router.get("/prowlarr/status")
+async def get_prowlarr_status(
+    prowlarr: Optional[ProwlarrClient] = Depends(get_prowlarr_client),
+) -> dict:
+    """
+    Get Prowlarr system status and version information.
+
+    Returns:
+        dict: Prowlarr status response (see ProwlarrClient.get_status())
+
+    Raises:
+        HTTPException: If Prowlarr is unreachable or returns an error
+    """
+    if not prowlarr:
+        raise HTTPException(status_code=503, detail="Prowlarr not configured")
+    try:
+        return await prowlarr.get_status()
+    except Exception as e:
+        logger.error(f"Prowlarr status request failed: {str(e)}")
+        raise
+
+
+@router.get("/prowlarr/indexers")
+async def get_prowlarr_indexers(
+    prowlarr: Optional[ProwlarrClient] = Depends(get_prowlarr_client),
+    search: Optional[str] = Query(None, description="Search term for indexer name"),
+    enabled: Optional[bool] = Query(None, description="Filter by enabled status"),
+) -> list | dict:
+    """
+    Get Prowlarr indexers with optional filtering.
+
+    Query Parameters:
+    - search (str): Filter indexers by name (case-insensitive substring match)
+    - enabled (bool): Filter by enabled status (true/false)
+
+    Returns:
+        list: List of indexers matching the filters
+
+    Example:
+        GET /api/v1/proxy/prowlarr/indexers?enabled=true
+
+    Raises:
+        HTTPException: If Prowlarr is unreachable or returns an error
+    """
+    if not prowlarr:
+        raise HTTPException(status_code=503, detail="Prowlarr not configured")
+    try:
+        indexers = await prowlarr.get_indexers()
+
+        # If no filters, return all indexers
+        if not any([search, enabled is not None]):
+            return indexers
+
+        # Apply filters
+        filtered = indexers
+        if search:
+            search_lower = search.lower()
+            filtered = [i for i in filtered if search_lower in i.get("name", "").lower()]
+
+        if enabled is not None:
+            filtered = [i for i in filtered if i.get("enabled") == enabled]
+
+        return filtered
+
+    except Exception as e:
+        logger.error(f"Prowlarr indexers list request failed: {str(e)}")
+        raise
+
+
+@router.get("/prowlarr/indexers/{indexer_id}")
+async def get_prowlarr_indexer_by_id(
+    indexer_id: int,
+    prowlarr: Optional[ProwlarrClient] = Depends(get_prowlarr_client),
+) -> dict:
+    """
+    Get a specific Prowlarr indexer by ID.
+
+    Parameters:
+        indexer_id (int): Prowlarr internal indexer ID
+
+    Returns:
+        dict: Indexer object with full metadata
+
+    Raises:
+        HTTPException: If indexer not found or Prowlarr is unreachable
+    """
+    if not prowlarr:
+        raise HTTPException(status_code=503, detail="Prowlarr not configured")
+    try:
+        return await prowlarr.get_indexers(indexer_id=indexer_id)
+    except Exception as e:
+        logger.error(f"Prowlarr indexer detail request failed: {str(e)}")
+        raise
+
+
+@router.post("/sonarr/series")
+async def sonarr_add_series(
+    tvdb_id: int,
+    title: str,
+    quality_profile_id: int,
+    root_folder_path: str,
+    monitored: bool = True,
+    sonarr: Optional[SonarrClient] = Depends(get_sonarr_client),
+) -> dict:
+    """
+    Add a new TV series to Sonarr.
+
+    Request Body:
+        {
+            "tvdb_id": 81189,
+            "title": "Breaking Bad",
+            "quality_profile_id": 1,
+            "root_folder_path": "/tv",
+            "monitored": true
+        }
+
+    Returns:
+        dict: Created series object with Sonarr ID and metadata
+
+    Raises:
+        HTTPException: If series already exists or Sonarr is unreachable
+    """
+    if not sonarr:
+        raise HTTPException(status_code=503, detail="Sonarr not configured")
+    try:
+        return await sonarr.add_series(
+            tvdb_id=tvdb_id,
+            title=title,
+            quality_profile_id=quality_profile_id,
+            root_folder_path=root_folder_path,
+            monitored=monitored,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Sonarr add series failed: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to add series: {str(e)}",
+        )
+
+
+@router.post("/lidarr/artists")
+async def lidarr_add_artist(
+    foreign_artist_id: str,
+    artist_name: str,
+    quality_profile_id: int,
+    root_folder_path: str,
+    monitored: bool = True,
+    lidarr: Optional[LidarrClient] = Depends(get_lidarr_client),
+) -> dict:
+    """
+    Add a new music artist to Lidarr.
+
+    Request Body:
+        {
+            "foreign_artist_id": "uuid",
+            "artist_name": "Radiohead",
+            "quality_profile_id": 1,
+            "root_folder_path": "/music",
+            "monitored": true
+        }
+
+    Returns:
+        dict: Created artist object with Lidarr ID and metadata
+
+    Raises:
+        HTTPException: If artist already exists or Lidarr is unreachable
+    """
+    if not lidarr:
+        raise HTTPException(status_code=503, detail="Lidarr not configured")
+    try:
+        return await lidarr.add_artist(
+            foreign_artist_id=foreign_artist_id,
+            artist_name=artist_name,
+            quality_profile_id=quality_profile_id,
+            root_folder_path=root_folder_path,
+            monitored=monitored,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Lidarr add artist failed: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to add artist: {str(e)}",
         )
