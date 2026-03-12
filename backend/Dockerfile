@@ -27,8 +27,12 @@ WORKDIR /app
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# Copy backend source code
-COPY . .
+# Copy backend source code into backend subdirectory
+RUN mkdir -p /app/backend
+COPY . /app/backend/
+
+# Set Python path to include /app so backend module can be imported
+ENV PYTHONPATH=/app:$PYTHONPATH
 
 # Create non-root user
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app

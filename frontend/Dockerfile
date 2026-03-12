@@ -20,9 +20,17 @@ COPY . .
 # Update svelte.config.js to use adapter-static instead of adapter-auto
 RUN sed -i "s/adapter from '@sveltejs\/adapter-auto'/adapter from '@sveltejs\/adapter-static'/" svelte.config.js
 
-# Build the application with environment variable
+# Build the application with environment variables
 ARG VITE_API_BASE=http://localhost:8000
 ENV VITE_API_BASE=${VITE_API_BASE}
+ARG VITE_RADARR_URL=http://localhost:7878
+ENV VITE_RADARR_URL=${VITE_RADARR_URL}
+ARG VITE_SONARR_URL=http://localhost:8989
+ENV VITE_SONARR_URL=${VITE_SONARR_URL}
+ARG VITE_LIDARR_URL=http://localhost:8686
+ENV VITE_LIDARR_URL=${VITE_LIDARR_URL}
+ARG VITE_PROWLARR_URL=http://localhost:9696
+ENV VITE_PROWLARR_URL=${VITE_PROWLARR_URL}
 RUN npm run build
 
 # Production stage with nginx
