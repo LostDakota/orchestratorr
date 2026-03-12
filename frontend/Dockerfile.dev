@@ -9,7 +9,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci
+RUN npm install
 
 # Copy source code
 COPY . .
@@ -17,9 +17,17 @@ COPY . .
 # Expose Vite dev server port
 EXPOSE 5173
 
-# Set API base URL
+# Set API base URL and service URLs
 ARG VITE_API_BASE=http://localhost:8000
 ENV VITE_API_BASE=${VITE_API_BASE}
+ARG VITE_RADARR_URL=http://localhost:7878
+ENV VITE_RADARR_URL=${VITE_RADARR_URL}
+ARG VITE_SONARR_URL=http://localhost:8989
+ENV VITE_SONARR_URL=${VITE_SONARR_URL}
+ARG VITE_LIDARR_URL=http://localhost:8686
+ENV VITE_LIDARR_URL=${VITE_LIDARR_URL}
+ARG VITE_PROWLARR_URL=http://localhost:9696
+ENV VITE_PROWLARR_URL=${VITE_PROWLARR_URL}
 
 # Run Vite dev server
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

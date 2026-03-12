@@ -21,6 +21,7 @@ Responsive grid layout that adapts from desktop (3 col) to mobile (1 col).
 		refreshHealth,
 		startPolling,
 		stopPolling,
+		getEnvServiceUrls,
 	} from '$lib/stores/appStore';
 
 	// Mock data for recent activities (will be replaced with real data from API)
@@ -70,26 +71,27 @@ Responsive grid layout that adapts from desktop (3 col) to mobile (1 col).
 		available: 1200,
 	};
 
-	// Service configurations
+	// Service configurations - read from environment variables
+	const serviceUrls = getEnvServiceUrls();
 	const services = [
 		{
 			name: 'Radarr',
-			url: 'http://localhost:7878',
+			url: serviceUrls.radarrUrl,
 			key: 'radarr',
 		},
 		{
 			name: 'Sonarr',
-			url: 'http://localhost:8989',
+			url: serviceUrls.sonarrUrl,
 			key: 'sonarr',
 		},
 		{
 			name: 'Lidarr',
-			url: 'http://localhost:8686',
+			url: serviceUrls.lidarrUrl,
 			key: 'lidarr',
 		},
 		{
 			name: 'Prowlarr',
-			url: 'http://localhost:9696',
+			url: serviceUrls.prowlarrUrl,
 			key: 'prowlarr',
 		},
 	];
