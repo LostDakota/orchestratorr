@@ -11,47 +11,18 @@ COPY package*.json ./
 # Using npm install instead of npm ci because package-lock.json is excluded by .gitignore
 RUN npm install
 
-# Install static adapter for SvelteKit (required for nginx static hosting)
-RUN npm install @sveltejs/adapter-static
-
 # Copy source code
 COPY . .
 
-# Debug: show current directory and svelte.config.js before changes
+# Debug: show current directory and svelte.config.js
 RUN echo "=== Current directory structure ===" && ls -la && \
     echo "=== Current svelte.config.js ===" && cat svelte.config.js 2>/dev/null || echo "No svelte.config.js found"
-
-# Create production svelte.config.js for adapter-static
-RUN rm -f svelte.config.js && cat > svelte.config.js << 'EOF'
-import adapter from '@sveltejs/adapter-static';
-import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
-
-/** @type {import('@sveltejs/kit').Config} */
-const config = {
-	preprocess: vitePreprocess(),
-	kit: {
-		adapter: adapter({
-			pages: 'build',
-			assets: 'build',
-			fallback: '200.html',
-			precompress: false,
-			strict: true
-		}),
-		paths: {
-			base: process.env.VITE_BASE_PATH || ''
-		}
-	}
-};
-
-export default config;
-EOF
-
-# Debug: show the created svelte.config.js
-RUN echo "=== Created svelte.config.js ===" && cat svelte.config.js
 
 # Build the application with environment variables
 ARG VITE_API_BASE=http://localhost:8000
 ENV VITE_API_BASE=${VITE_API_BASE}
+ARG VITE_ADAPTER=static
+ENV VITE_ADAPTER=${VITE_ADAPTER}
 ARG VITE_RADARR_URL=http://localhost:7878
 ENV VITE_RADARR_URL=${VITE_RADARR_URL}
 ARG VITE_SONARR_URL=http://localhost:8989
@@ -63,6 +34,7 @@ ENV VITE_PROWLARR_URL=${VITE_PROWLARR_URL}
 # Debug: show environment variables
 RUN echo "=== Build environment variables ===" && \
     echo "VITE_API_BASE=$VITE_API_BASE" && \
+    echo "VITE_ADAPTER=$VITE_ADAPTER" && \
     echo "VITE_RADARR_URL=$VITE_RADARR_URL" && \
     echo "VITE_SONARR_URL=$VITE_SONARR_URL" && \
     echo "VITE_LIDARR_URL=$VITE_LIDARR_URL" && \
