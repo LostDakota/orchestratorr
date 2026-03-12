@@ -14,7 +14,7 @@ const config = {
 		adapter: process.env.VITE_ADAPTER === 'static' ? adapterStatic({
 		   pages: 'build',
                    assets: 'build',
-                   fallback: '200.html',
+                   fallback: 'index.html',
                    precompress: false,
                    strict: true
                 }) : adapterAuto()
