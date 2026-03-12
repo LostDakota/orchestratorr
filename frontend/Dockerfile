@@ -14,9 +14,15 @@ RUN npm install
 # Copy source code
 COPY . .
 
+# Ensure adapter-static is installed (package.json was updated)
+RUN echo "=== Ensuring @sveltejs/adapter-static is installed ===" && \
+    npm list @sveltejs/adapter-static 2>/dev/null || npm install @sveltejs/adapter-static
+
 # Debug: show current directory and svelte.config.js
 RUN echo "=== Current directory structure ===" && ls -la && \
-    echo "=== Current svelte.config.js ===" && cat svelte.config.js 2>/dev/null || echo "No svelte.config.js found"
+    echo "=== Current svelte.config.js ===" && cat svelte.config.js 2>/dev/null || echo "No svelte.config.js found" && \
+    echo "=== Checking installed adapters ===" && \
+    npm list @sveltejs/adapter-static @sveltejs/adapter-auto 2>/dev/null || echo "Adapter check failed"
 
 # Build the application with environment variables
 ARG VITE_API_BASE=http://localhost:8000
@@ -70,6 +76,12 @@ FROM nginx:alpine
 # Debug: show what's being copied (run in builder context)
 COPY --from=builder /tmp/build.log /tmp/build.log
 
+# Clean nginx html directory before copying (remove default nginx files)
+RUN echo "=== Cleaning nginx html directory ===" && \
+    rm -rf /usr/share/nginx/html/* 2>/dev/null || true && \
+    echo "=== Nginx html directory after clean ===" && \
+    ls -la /usr/share/nginx/html/ 2>/dev/null || echo "Directory empty or doesn't exist"
+
 # Copy built static files
 COPY --from=builder /app/build /usr/share/nginx/html
 
@@ -77,6 +89,8 @@ COPY --from=builder /app/build /usr/share/nginx/html
 RUN echo "=== Verifying nginx files ===" && \
     echo "NGINX root directory:" && \
     ls -la /usr/share/nginx/html/ 2>/dev/null || echo "No files in nginx root" && \
+    echo "=== Contents of nginx html directory ===" && \
+    find /usr/share/nginx/html -type f 2>/dev/null | head -20 || echo "No files found" && \
     echo "=== Looking for HTML files ===" && \
     find /usr/share/nginx/html -name "*.html" -type f 2>/dev/null | head -10 || echo "No HTML files found"
 
