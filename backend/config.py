@@ -55,7 +55,20 @@ class Settings(BaseSettings):
     # Frontend Configuration
     # ========================================================================
     frontend_url: str = os.getenv("FRONTEND_URL", "http://localhost:5173")
-    allowed_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
+    allowed_origins: list[str] = [
+        "http://localhost",
+        "http://localhost:80",
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:8080",
+        "http://localhost:8081",
+        "http://127.0.0.1",
+        "http://127.0.0.1:80",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:8080",
+        "http://127.0.0.1:8081",
+    ]
     
     @field_validator("allowed_origins", mode="before")
     @classmethod
@@ -69,7 +82,20 @@ class Settings(BaseSettings):
         4. Empty/None: returns default list
         """
         if value is None:
-            return ["http://localhost:5173", "http://localhost:3000"]
+            return [
+                "http://localhost",
+                "http://localhost:80",
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "http://localhost:8080",
+                "http://localhost:8081",
+                "http://127.0.0.1",
+                "http://127.0.0.1:80",
+                "http://127.0.0.1:3000",
+                "http://127.0.0.1:5173",
+                "http://127.0.0.1:8080",
+                "http://127.0.0.1:8081",
+            ]
         
         # If it's already a list, return it
         if isinstance(value, list):
@@ -102,7 +128,7 @@ class Settings(BaseSettings):
 
     class Config:
         """Pydantic config."""
-
+        extra = "ignore"
         env_file = ".env"
         case_sensitive = False
 

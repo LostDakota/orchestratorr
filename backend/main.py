@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from backend.config import settings
-from backend.routes import proxy_router
+from backend.routes import proxy_router, search_router
 
 # Configure logging
 logging.basicConfig(
@@ -61,6 +61,7 @@ logger.info(f"CORS enabled for origins: {settings.allowed_origins}")
 # ============================================================================
 
 app.include_router(proxy_router)
+app.include_router(search_router)
 
 # ============================================================================
 # Health Check Endpoint

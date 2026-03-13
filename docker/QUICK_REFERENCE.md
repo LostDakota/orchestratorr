@@ -91,11 +91,14 @@ docker-compose exec backend env | grep RADARR
 
 | Service   | URL                        | Purpose           |
 |-----------|----------------------------|-------------------|
-| Frontend  | http://localhost           | Web UI            |
+| Frontend  | http://localhost           | Web UI (default port 80) |
+| Frontend* | http://localhost:${FRONTEND_PORT} | Custom port (if FRONTEND_PORT set) |
 | Backend   | http://localhost:8000      | API               |
 | API Docs  | http://localhost:8000/docs | Swagger UI        |
 | API Docs  | http://localhost:8000/redoc| ReDoc UI          |
 | Health    | http://localhost:8000/health| Backend health    |
+
+> **Note**: If port 80 is occupied, set `FRONTEND_PORT` in `.env` (e.g., `FRONTEND_PORT=8081`) to map frontend to a different host port.
 
 ## Development Workflow
 
@@ -140,6 +143,12 @@ docker-compose logs backend | tail -20
 # Frontend showing 502?
 docker-compose ps                           # Backend running?
 docker-compose exec frontend ping backend   # Can reach backend?
+
+# API endpoints returning 404?
+# Check if backend is running and routes are loaded
+docker-compose logs backend | grep -i "error\|import\|module"
+# Ensure all dependencies installed (requirements.txt)
+docker-compose exec backend pip list | grep -E "requests|fastapi|uvicorn"
 
 # Port conflicts?
 lsof -i :80 && lsof -i :8000

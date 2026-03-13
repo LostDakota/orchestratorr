@@ -34,6 +34,7 @@ services:
       dockerfile: Dockerfile.dev
       args:
         VITE_API_BASE: ""
+        VITE_ADAPTER: auto
         VITE_RADARR_URL: ${RADARR_URL:-http://localhost:7878}
         VITE_SONARR_URL: ${SONARR_URL:-http://localhost:8989}
         VITE_LIDARR_URL: ${LIDARR_URL:-http://localhost:8686}
@@ -48,7 +49,7 @@ services:
       - /app/node_modules  # Exclude node_modules from mount
     ports:
       - "5173:5173"  # Vite dev server port
-      - "80:80"      # Nginx port (optional for production preview)
+      - "${FRONTEND_PORT:-80}:80"      # Nginx port (optional for production preview)
     networks:
       - orchestratorr-net
     environment:

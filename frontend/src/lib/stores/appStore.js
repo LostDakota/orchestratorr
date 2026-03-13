@@ -8,7 +8,7 @@
  * - Polling lifecycle
  */
 
-import { writable, derived } from 'svelte/store';
+import { writable, derived, get } from 'svelte/store';
 
 const POLL_INTERVAL = 30000; // 30 seconds
 const STORAGE_KEY_PREFIX = 'orchestratorr_';
@@ -119,14 +119,10 @@ export const configStore = createLocalStorageStore('config', {
 /**
  * Get the current backend URL from config.
  *
- * @returns {Promise<string>} Current backend URL
+ * @returns {string} Current backend URL
  */
-export async function getBackendUrl() {
-	let url = '';
-	configStore.subscribe((config) => {
-		url = config.backendUrl;
-	});
-	return url;
+export function getBackendUrl() {
+	return get(configStore).backendUrl;
 }
 
 /**
@@ -197,10 +193,7 @@ export async function refreshHealth() {
 	}));
 
 	try {
-		let backendUrl = '';
-		configStore.subscribe((config) => {
-			backendUrl = config.backendUrl;
-		});
+		const backendUrl = get(configStore).backendUrl;
 
 		const response = await fetch(`${backendUrl}/api/v1/proxy/status`, {
 			method: 'GET',

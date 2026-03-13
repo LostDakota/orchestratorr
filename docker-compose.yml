@@ -33,6 +33,7 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_BASE: ""  # Use relative paths, nginx will proxy /api to backend
+        VITE_ADAPTER: static
         VITE_RADARR_URL: ${RADARR_URL:-http://localhost:7878}
         VITE_SONARR_URL: ${SONARR_URL:-http://localhost:8989}
         VITE_LIDARR_URL: ${LIDARR_URL:-http://localhost:8686}
@@ -42,7 +43,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "80:80"
+      - "${FRONTEND_PORT:-80}:80"
     networks:
       - orchestratorr-net
     healthcheck:
