@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { get } from 'svelte/store';
 import {
 	statusStore,
 	isAnyServiceDown,
@@ -18,14 +19,24 @@ import {
 	refreshStatus,
 } from '../stores/statusStore';
 
+beforeEach(() => {
+	statusStore.set({
+		radarr: { version: null, status: 'unknown', lastChecked: null },
+		sonarr: { version: null, status: 'unknown', lastChecked: null },
+		lidarr: { version: null, status: 'unknown', lastChecked: null },
+		prowlarr: { version: null, status: 'unknown', lastChecked: null },
+		backendError: null,
+	});
+});
+
+afterEach(() => {
+	vi.restoreAllMocks();
+});
+
 describe('statusStore', () => {
 	describe('initialization', () => {
-		it('should initialize with default values', async () => {
-			let store = null;
-			statusStore.subscribe((value) => {
-				store = value;
-			});
-
+		it('should initialize with default values', () => {
+			const store = get(statusStore);
 			expect(store).not.toBeNull();
 			expect(store.radarr).toBeDefined();
 			expect(store.sonarr).toBeDefined();
@@ -34,24 +45,16 @@ describe('statusStore', () => {
 			expect(store.backendError).toBeNull();
 		});
 
-		it('should initialize all services with unknown status', async () => {
-			let store = null;
-			statusStore.subscribe((value) => {
-				store = value;
-			});
-
+		it('should initialize all services with unknown status', () => {
+			const store = get(statusStore);
 			expect(store.radarr.status).toBe('unknown');
 			expect(store.sonarr.status).toBe('unknown');
 			expect(store.lidarr.status).toBe('unknown');
 			expect(store.prowlarr.status).toBe('unknown');
 		});
 
-		it('should initialize service versions as null', async () => {
-			let store = null;
-			statusStore.subscribe((value) => {
-				store = value;
-			});
-
+		it('should initialize service versions as null', () => {
+			const store = get(statusStore);
 			expect(store.radarr.version).toBeNull();
 			expect(store.sonarr.version).toBeNull();
 			expect(store.lidarr.version).toBeNull();
@@ -61,28 +64,21 @@ describe('statusStore', () => {
 
 	describe('refreshStatus', () => {
 		it('should be callable without throwing', async () => {
-			// Mock fetch to prevent actual API calls
 			global.fetch = vi.fn(() =>
 				Promise.resolve({
 					ok: true,
-					json: () =>
-						Promise.resolve({
-							version: '4.7.0',
-						}),
+					json: () => Promise.resolve({ version: '4.7.0' }),
 					status: 200,
 				}),
 			);
 
 			await expect(refreshStatus()).resolves.not.toThrow();
-
-			global.fetch.mockRestore();
 		});
 	});
 });
 
 describe('isAnyServiceDown', () => {
-	it('should be false when all services are online', (done) => {
-		// Set up store with all online services
+	it('should be false when all services are online', () => {
 		statusStore.set({
 			radarr: { version: '4.7.0', status: 'online', lastChecked: new Date() },
 			sonarr: { version: '4.1.0', status: 'online', lastChecked: new Date() },
@@ -91,13 +87,10 @@ describe('isAnyServiceDown', () => {
 			backendError: null,
 		});
 
-		isAnyServiceDown.subscribe((value) => {
-			expect(value).toBe(false);
-			done();
-		});
+		expect(get(isAnyServiceDown)).toBe(false);
 	});
 
-	it('should be true when at least one service is offline', (done) => {
+	it('should be true when at least one service is offline', () => {
 		statusStore.set({
 			radarr: { version: '4.7.0', status: 'offline', lastChecked: new Date() },
 			sonarr: { version: '4.1.0', status: 'online', lastChecked: new Date() },
@@ -106,13 +99,10 @@ describe('isAnyServiceDown', () => {
 			backendError: null,
 		});
 
-		isAnyServiceDown.subscribe((value) => {
-			expect(value).toBe(true);
-			done();
-		});
+		expect(get(isAnyServiceDown)).toBe(true);
 	});
 
-	it('should be true when backend error exists', (done) => {
+	it('should be true when backend error exists', () => {
 		statusStore.set({
 			radarr: { version: '4.7.0', status: 'online', lastChecked: new Date() },
 			sonarr: { version: '4.1.0', status: 'online', lastChecked: new Date() },
@@ -121,21 +111,32 @@ describe('isAnyServiceDown', () => {
 			backendError: 'Backend unreachable',
 		});
 
-		isAnyServiceDown.subscribe((value) => {
-			expect(value).toBe(true);
-			done();
-		});
+		expect(get(isAnyServiceDown)).toBe(true);
 	});
 });
 
 describe('initializeStatusPolling', () => {
 	it('should return a cleanup function', () => {
+		global.fetch = vi.fn(() =>
+			Promise.resolve({
+				ok: true,
+				json: () => Promise.resolve({ version: '4.7.0' }),
+				status: 200,
+			}),
+		);
 		const cleanup = initializeStatusPolling();
 		expect(typeof cleanup).toBe('function');
 		cleanup();
 	});
 
 	it('should clear interval when cleanup is called', () => {
+		global.fetch = vi.fn(() =>
+			Promise.resolve({
+				ok: true,
+				json: () => Promise.resolve({ version: '4.7.0' }),
+				status: 200,
+			}),
+		);
 		const cleanup = initializeStatusPolling();
 		expect(() => cleanup()).not.toThrow();
 	});
@@ -143,38 +144,37 @@ describe('initializeStatusPolling', () => {
 
 describe('Service timeout and degraded status', () => {
 	it('should handle service timeouts gracefully', async () => {
+		vi.useFakeTimers();
+
+		// Mock fetch that takes 6s (longer than the 5s AbortController timeout)
 		global.fetch = vi.fn(() =>
 			new Promise((resolve) => {
 				setTimeout(() => {
 					resolve({
 						ok: true,
-						json: () =>
-							Promise.resolve({
-								version: '4.7.0',
-							}),
+						json: () => Promise.resolve({ version: '4.7.0' }),
 						status: 200,
 					});
-				}, 6000); // Longer than 5 second timeout
+				}, 6000);
 			}),
 		);
 
-		// Mock the timeout behavior
-		const timeoutPromise = new Promise((resolve) => {
-			setTimeout(() => resolve({ status: 'degraded' }), 5000);
-		});
+		const refreshPromise = refreshStatus();
 
-		const result = await Promise.race([
-			fetch('/api/v1/radarr/system/status'),
-			timeoutPromise,
-		]);
+		// Advance past the 5s abort timeout
+		await vi.advanceTimersByTimeAsync(6000);
 
-		expect(result.status).toBe('degraded');
+		await refreshPromise;
 
-		global.fetch.mockRestore();
+		const store = get(statusStore);
+		// Services should be degraded (aborted) or offline, not online
+		const statuses = [store.radarr.status, store.sonarr.status, store.lidarr.status, store.prowlarr.status];
+		expect(statuses.every((s) => s === 'degraded' || s === 'offline')).toBe(true);
+
+		vi.useRealTimers();
 	});
 
 	it('should mark as degraded when response time exceeds 3 seconds', () => {
-		// This is validated by the responseTime > 3000 check in fetchServiceStatus
 		const responseTime = 3500;
 		const status = responseTime > 3000 ? 'degraded' : 'online';
 		expect(status).toBe('degraded');
@@ -188,43 +188,34 @@ describe('Service timeout and degraded status', () => {
 });
 
 describe('Backend error handling', () => {
-	it('should set backendError when fetch fails', async () => {
+	it('should mark services as offline when fetch fails', async () => {
 		global.fetch = vi.fn(() => Promise.reject(new Error('Network error')));
 
 		await refreshStatus();
 
-		let store = null;
-		statusStore.subscribe((value) => {
-			store = value;
-		});
-
-		// The refreshStatus function sets backendError on catch
-		expect(store.backendError).not.toBeNull();
-
-		global.fetch.mockRestore();
+		const store = get(statusStore);
+		// Individual service fetches catch errors and return offline
+		expect(store.radarr.status).toBe('offline');
+		expect(store.sonarr.status).toBe('offline');
+		expect(store.lidarr.status).toBe('offline');
+		expect(store.prowlarr.status).toBe('offline');
 	});
 
 	it('should clear backendError on successful refresh', async () => {
+		// First set a backend error
+		statusStore.update((s) => ({ ...s, backendError: 'Previous error' }));
+
 		global.fetch = vi.fn(() =>
 			Promise.resolve({
 				ok: true,
-				json: () =>
-					Promise.resolve({
-						version: '4.7.0',
-					}),
+				json: () => Promise.resolve({ version: '4.7.0' }),
 				status: 200,
 			}),
 		);
 
 		await refreshStatus();
 
-		let store = null;
-		statusStore.subscribe((value) => {
-			store = value;
-		});
-
+		const store = get(statusStore);
 		expect(store.backendError).toBeNull();
-
-		global.fetch.mockRestore();
 	});
 });

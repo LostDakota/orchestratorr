@@ -128,7 +128,7 @@ class Settings(BaseSettings):
 
     class Config:
         """Pydantic config."""
-
+        extra = "ignore"
         env_file = ".env"
         case_sensitive = False
 

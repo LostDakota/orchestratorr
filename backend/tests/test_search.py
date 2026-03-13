@@ -345,7 +345,7 @@ def test_search_results_sorting_with_none_year():
 @pytest.mark.asyncio
 async def test_search_lidarr_not_implemented():
     """Test Lidarr search currently returns empty (TODO)."""
-    results = await search_lidarr("test")
+    results = await search_lidarr(None, "test")
 
     # Currently not implemented, should return empty list
     assert len(results) == 0
