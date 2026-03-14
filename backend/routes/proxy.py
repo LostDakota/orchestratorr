@@ -22,7 +22,7 @@ from backend.config import settings
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1/proxy", tags=["proxy"])
+router = APIRouter(prefix="/api/v1", tags=["proxy"])
 
 
 # ============================================================================

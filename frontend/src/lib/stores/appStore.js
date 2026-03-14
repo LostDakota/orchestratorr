@@ -202,7 +202,7 @@ export async function refreshHealth() {
 			backendUrl = config.backendUrl;
 		});
 
-		const response = await fetch(`${backendUrl}/api/v1/proxy/status`, {
+		const response = await fetch(`${backendUrl}/api/v1/status`, {
 			method: 'GET',
 			headers: { 'Content-Type': 'application/json' },
 		});

@@ -38,7 +38,7 @@
 	async function performSearch(query) {
 		try {
 			error = null;
-			const backendUrl = getBackendUrl();
+			const backendUrl = await getBackendUrl();
 			const encodedQuery = encodeURIComponent(query);
 			const response = await fetch(`${backendUrl}/api/v1/search?q=${encodedQuery}&limit=10`);
 
@@ -48,6 +48,7 @@
 
 			const data = await response.json();
 			results = data.results || [];
+			console.log(results);
 			showResults = true;
 		} catch (err) {
 			console.error('Search error:', err);
@@ -222,10 +223,10 @@
 				<div class="px-4 py-3 text-red-400 text-sm">{error}</div>
 			{:else if results.length > 0}
 				<div class="max-h-96 overflow-y-auto">
-					{#each results as result (result.tmdb_id || result.title)}
+					{#each results as result, idx}
 						<button
 							on:click={() => selectResult(result)}
-							disabled={addingId === result.remote_id || result.in_library}
+							disabled={result.remote_id}
 							class="w-full px-4 py-3 flex items-start gap-3 border-b border-slate-700
                                    hover:bg-slate-800 transition-colors text-left last:border-b-0
                                    disabled:opacity-50 disabled:cursor-not-allowed"
@@ -283,12 +284,12 @@
 								</div>
 
 								<!-- Status -->
-								{#if addingId === result.remote_id}
+								{#if addingId === result.id}
 									<p class="text-blue-400 text-xs mt-1 flex items-center gap-1">
 										<Loader2 size={12} class="animate-spin" />
 										Adding...
 									</p>
-								{:else if result.in_library}
+								{:else if result.remote_id}
 									<p class="text-green-400 text-xs mt-1">✓ In Library</p>
 								{:else}
 									<p class="text-yellow-400 text-xs mt-1">+ Add to Library</p>

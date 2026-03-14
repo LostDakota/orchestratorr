@@ -77,6 +77,7 @@ class RadarrMovie(BaseModel):
                 "runtime": 136,
                 "ratings": [],
                 "images": [],
+                "hasFile": False
             }
         }
 
