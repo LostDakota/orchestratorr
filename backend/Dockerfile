@@ -1,56 +1,41 @@
 # Backend Dockerfile for orchestratorr
 # Uses Python 3.11 slim image
 FROM python:3.11-slim as builder
-
 WORKDIR /app
-
 # Install system dependencies for building Python packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
     && rm -rf /var/lib/apt/lists/*
-
 # Copy requirements and install Python dependencies
-COPY requirements.txt .
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
-
 # Remove build dependencies to keep image small
 RUN apt-get purge -y --auto-remove gcc g++
-
 # Production stage
 FROM python:3.11-slim
-
 WORKDIR /app
-
 # Copy installed packages from builder
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
-
-# Copy backend source code into backend subdirectory
-RUN mkdir -p /app/backend
-COPY . /app/backend/
-
+COPY . /app/
 # Set Python path to include /app so backend module can be imported
 ENV PYTHONPATH=/app:$PYTHONPATH
-
 # Create non-root user
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
-
 # Expose FastAPI port
 EXPOSE 8000
-
 # Environment variables (can be overridden)
 ENV FASTAPI_HOST=0.0.0.0 \
     FASTAPI_PORT=8000 \
     FASTAPI_RELOAD=false \
     LOG_LEVEL=INFO \
     PYTHONUNBUFFERED=1
-
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
-
 # Run the application
+WORKDIR /app
 CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
