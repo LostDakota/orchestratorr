@@ -163,8 +163,8 @@ async def search_radarr(client: RadarrClient, query: str) -> List[SearchResult]:
             poster_url = None
             if "images" in movie and isinstance(movie["images"], list):
                 for img in movie["images"]:
-                    if img.get("coverType") == "poster" and img.get("url"):
-                        poster_url = img["url"]
+                    if img.get("coverType") == "poster" and img.get("remoteUrl"):
+                        poster_url = img["remoteUrl"]
                         break
 
             result = SearchResult(
@@ -177,8 +177,8 @@ async def search_radarr(client: RadarrClient, query: str) -> List[SearchResult]:
                 tmdb_id=movie.get("tmdbId"),
                 imdb_id=movie.get("imdbId"),
                 poster_url=poster_url,
-                status="missing",  # Default; would need to check if in library
-                in_library=False,  # Would need to check against library
+                status="missing",
+                in_library=movie.get("hasFile"),
             )
             results.append(result)
 
@@ -213,8 +213,8 @@ async def search_sonarr(client: Optional[SonarrClient], query: str) -> List[Sear
             poster_url = None
             if "images" in series and isinstance(series["images"], list):
                 for img in series["images"]:
-                    if img.get("coverType") == "poster" and img.get("url"):
-                        poster_url = img["url"]
+                    if img.get("coverType") == "poster" and img.get("remoteUrl"):
+                        poster_url = img["remoteUrl"]
                         break
 
             result = SearchResult(
@@ -263,8 +263,8 @@ async def search_lidarr(client: Optional[LidarrClient], query: str) -> List[Sear
             poster_url = None
             if "images" in artist and isinstance(artist["images"], list):
                 for img in artist["images"]:
-                    if img.get("coverType") == "poster" and img.get("url"):
-                        poster_url = img["url"]
+                    if img.get("coverType") == "poster" and img.get("remoteUrl"):
+                        poster_url = img["remoteUrl"]
                         break
 
             result = SearchResult(
@@ -298,10 +298,10 @@ async def search_lidarr(client: Optional[LidarrClient], query: str) -> List[Sear
 @router.get("/")
 async def universal_search(
     q: str = Query(..., min_length=2, description="Search query"),
+    limit: int = Query(20, ge=1, le=100, description="Max results per service"),
     radarr: RadarrClient = Depends(get_radarr_client),
     sonarr: Optional[SonarrClient] = Depends(get_sonarr_client),
     lidarr: Optional[LidarrClient] = Depends(get_lidarr_client),
-    limit: int = Query(20, ge=1, le=100, description="Max results per service"),
 ) -> dict:
     """
     Universal search across all *arr services.

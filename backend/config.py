@@ -70,11 +70,11 @@ class Settings(BaseSettings):
     # API Configuration
     # ========================================================================
     api_version: str = "v1"
-    api_prefix: str = "/api/v1"
+    api_prefix: str = "/api/v1/proxy"
 
     class Config:
         """Pydantic config."""
-
+        extra = "ignore"
         env_file = ".env"
         case_sensitive = False
 

@@ -24,7 +24,9 @@ Settings include backend URL, theme, refresh interval, and advanced options.
 	}
 
 	onDestroy(() => {
-		document.body.classList.remove('modal-open');
+		if (typeof document !== 'undefined') {
+			document.body.classList.remove('modal-open');
+		}
 	});
 
 	/**

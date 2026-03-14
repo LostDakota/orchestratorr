@@ -299,3 +299,7 @@ class RadarrClient(BaseArrClient):
         params = {"term": query}
         response = await self.get("/api/v3/movie/lookup", params=params)
         return response.json()
+
+    async def snatched(self, movie_id: int) -> bool:
+        response = await self.get(f"/api/v3/movie/{movie_id}");
+        return response.json()
