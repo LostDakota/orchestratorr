@@ -4,9 +4,11 @@ Configuration management for orchestratorr backend.
 Loads environment variables and provides a centralized config object.
 """
 
+import json
 import os
 from typing import Optional
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -53,13 +55,39 @@ class Settings(BaseSettings):
     # Frontend Configuration
     # ========================================================================
     frontend_url: str = os.getenv("FRONTEND_URL", "http://localhost:5173")
-    allowed_origins: list[str] = [
-        o.strip()
-        for o in os.getenv(
-            "ALLOWED_ORIGINS",
-            "http://localhost:5173,http://localhost:3000",
-        ).split(",")
-    ]
+    allowed_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
+    
+    @field_validator("allowed_origins", mode="before")
+    @classmethod
+    def parse_allowed_origins(cls, value):
+        """Parse ALLOWED_ORIGINS from environment variable.
+        
+        Supports:
+        1. JSON array: ["http://localhost:5173", "http://localhost:3000"]
+        2. Comma-separated string: "http://localhost:5173,http://localhost:3000"
+        3. List (already parsed by Pydantic)
+        4. Empty/None: returns default list
+        """
+        if value is None:
+            return ["http://localhost:5173", "http://localhost:3000"]
+        
+        # If it's already a list, return it
+        if isinstance(value, list):
+            return [str(item).strip() for item in value if str(item).strip()]
+        
+        # Convert to string and try JSON parsing first
+        str_value = str(value)
+        
+        # Try to parse as JSON
+        try:
+            parsed = json.loads(str_value)
+            if isinstance(parsed, list):
+                return [str(item).strip() for item in parsed if str(item).strip()]
+        except (json.JSONDecodeError, TypeError):
+            pass
+        
+        # Fall back to comma-separated string
+        return [url.strip() for url in str_value.split(",") if url.strip()]
 
     # ========================================================================
     # Logging Configuration

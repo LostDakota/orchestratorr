@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   backend:
     build:
@@ -16,8 +14,8 @@ services:
       - .env
     volumes:
       # Mount source code for hot reload
-      - ./backend:/app
-      - /app/__pycache__  # Exclude pycache from mount
+      - ./backend:/app/backend
+      - /app/backend/__pycache__  # Exclude pycache from mount
     ports:
       - "8000:8000"
     networks:
@@ -36,6 +34,10 @@ services:
       dockerfile: Dockerfile.dev
       args:
         VITE_API_BASE: ""
+        VITE_RADARR_URL: ${RADARR_URL:-http://localhost:7878}
+        VITE_SONARR_URL: ${SONARR_URL:-http://localhost:8989}
+        VITE_LIDARR_URL: ${LIDARR_URL:-http://localhost:8686}
+        VITE_PROWLARR_URL: ${PROWLARR_URL:-http://localhost:9696}
     container_name: orchestratorr-frontend-dev
     restart: unless-stopped
     depends_on:

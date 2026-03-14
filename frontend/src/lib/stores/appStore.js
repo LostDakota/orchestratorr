@@ -75,6 +75,29 @@ function clearLocalStorage(key) {
 // ============================================================================
 
 /**
+ * Get environment variable for API base URL
+ */
+const getEnvApiBase = () => {
+	// Check if VITE_API_BASE is defined (including empty string)
+	if (import.meta.env.VITE_API_BASE !== undefined) {
+		return import.meta.env.VITE_API_BASE;
+	}
+	return 'http://localhost:8000';
+};
+
+/**
+ * Get environment variable for service URLs
+ */
+export const getEnvServiceUrls = () => {
+	return {
+		radarrUrl: import.meta.env.VITE_RADARR_URL || 'http://localhost:7878',
+		sonarrUrl: import.meta.env.VITE_SONARR_URL || 'http://localhost:8989',
+		lidarrUrl: import.meta.env.VITE_LIDARR_URL || 'http://localhost:8686',
+		prowlarrUrl: import.meta.env.VITE_PROWLARR_URL || 'http://localhost:9696',
+	};
+};
+
+/**
  * Application configuration store.
  *
  * Persists to localStorage automatically.
@@ -86,14 +109,6 @@ function clearLocalStorage(key) {
  *   showAdvanced: boolean
  * }>}
  */
-const getEnvApiBase = () => {
-	// Check if VITE_API_BASE is defined (including empty string)
-	if (import.meta.env.VITE_API_BASE !== undefined) {
-		return import.meta.env.VITE_API_BASE;
-	}
-	return 'http://localhost:8000';
-};
-
 export const configStore = createLocalStorageStore('config', {
 	backendUrl: getEnvApiBase(),
 	theme: 'dark',
