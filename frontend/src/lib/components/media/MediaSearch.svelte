@@ -1,7 +1,7 @@
 <script>
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
-    import { debounce } from '$lib/utils/debounce';
+    import { debounce } from '$lib/utils/debounce.js';
 
     export let mediaType = 'movie';
 
