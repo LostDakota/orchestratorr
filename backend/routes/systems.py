@@ -10,7 +10,7 @@ from typing import List, Dict
 
 from fastapi import APIRouter, HTTPException
 
-system_router = APIRouter(prefix="/api/v1/system", tags=["system"])
+router = APIRouter(prefix="/api/v1/system", tags=["system"])
 
 def get_disk_space(paths: List[str] = None) -> List[Dict]:
     """
@@ -57,7 +57,7 @@ def get_disk_space(paths: List[str] = None) -> List[Dict]:
     
     return disk_spaces
 
-@system_router.get("/disk-space")
+@router.get("/disk-space")
 async def get_system_disk_space(paths: List[str] = None) -> List[Dict]:
     """
     API endpoint to retrieve disk space information.

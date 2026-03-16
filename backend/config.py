@@ -6,7 +6,8 @@ Manages environment variables and application settings.
 
 from typing import Optional, List
 
-from pydantic import BaseSettings, validator
+from pydantic import validator
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):

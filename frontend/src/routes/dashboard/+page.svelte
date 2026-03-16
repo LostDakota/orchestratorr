@@ -6,13 +6,12 @@ Responsive grid layout that adapts from desktop (3 col) to mobile (1 col).
 -->
 
 <script>
-	import { onMount } from 'svelte';
-	import ServiceCard from '$lib/components/dashboard/ServiceCard.svelte';
-	import RecentActivity from '$lib/components/dashboard/RecentActivity.svelte';
-	import DiskSpace from '$lib/components/dashboard/DiskSpace.svelte';
-	import SettingsPanel from '$lib/components/SettingsPanel.svelte';
-	import UniversalSearch from '$lib/components/UniversalSearch.svelte';
-import MediaSearch from '$lib/components/media/MediaSearch.svelte';
+	import { onMount } from "svelte";
+	import ServiceCard from "$lib/components/dashboard/ServiceCard.svelte";
+	import RecentActivity from "$lib/components/dashboard/RecentActivity.svelte";
+	import DiskSpace from "$lib/components/dashboard/DiskSpace.svelte";
+	import SettingsPanel from "$lib/components/SettingsPanel.svelte";
+	import UniversalSearch from "$lib/components/UniversalSearch.svelte";
 
 	import {
 		serviceStatusStore,
@@ -21,52 +20,51 @@ import MediaSearch from '$lib/components/media/MediaSearch.svelte';
 		isHealthLoading,
 		refreshHealth,
 		startPolling,
-		stopPolling,
 		getEnvServiceUrls,
-	} from '$lib/stores/appStore';
+	} from "$lib/stores/appStore";
 
 	// Mock data for recent activities (will be replaced with real data from API)
 	let recentActivities = [
 		{
-			id: '1',
-			type: 'movie',
-			title: 'The Matrix',
-			service: 'radarr',
+			id: "1",
+			type: "movie",
+			title: "The Matrix",
+			service: "radarr",
 			timestamp: new Date(Date.now() - 5 * 60000),
 		},
 		{
-			id: '2',
-			type: 'tv',
-			title: 'Breaking Bad S01E01',
-			service: 'sonarr',
+			id: "2",
+			type: "tv",
+			title: "Breaking Bad S01E01",
+			service: "sonarr",
 			timestamp: new Date(Date.now() - 15 * 60000),
 		},
 		{
-			id: '3',
-			type: 'movie',
-			title: 'Inception',
-			service: 'radarr',
+			id: "3",
+			type: "movie",
+			title: "Inception",
+			service: "radarr",
 			timestamp: new Date(Date.now() - 30 * 60000),
 		},
 		{
-			id: '4',
-			type: 'music',
-			title: 'Pink Floyd - The Wall',
-			service: 'lidarr',
+			id: "4",
+			type: "music",
+			title: "Pink Floyd - The Wall",
+			service: "lidarr",
 			timestamp: new Date(Date.now() - 1 * 3600000),
 		},
 		{
-			id: '5',
-			type: 'search',
-			title: 'Found 3 new releases',
-			service: 'radarr',
+			id: "5",
+			type: "search",
+			title: "Found 3 new releases",
+			service: "radarr",
 			timestamp: new Date(Date.now() - 2 * 3600000),
 		},
 	];
 
 	// Mock disk space data (will be replaced with real data from API)
 	let diskSpace = {
-		path: '/media',
+		path: "/media",
 		total: 4000,
 		used: 2800,
 		available: 1200,
@@ -76,24 +74,24 @@ import MediaSearch from '$lib/components/media/MediaSearch.svelte';
 	const serviceUrls = getEnvServiceUrls();
 	const services = [
 		{
-			name: 'Radarr',
+			name: "Radarr",
 			url: serviceUrls.radarrUrl,
-			key: 'radarr',
+			key: "radarr",
 		},
 		{
-			name: 'Sonarr',
+			name: "Sonarr",
 			url: serviceUrls.sonarrUrl,
-			key: 'sonarr',
+			key: "sonarr",
 		},
 		{
-			name: 'Lidarr',
+			name: "Lidarr",
 			url: serviceUrls.lidarrUrl,
-			key: 'lidarr',
+			key: "lidarr",
 		},
 		{
-			name: 'Prowlarr',
+			name: "Prowlarr",
 			url: serviceUrls.prowlarrUrl,
-			key: 'prowlarr',
+			key: "prowlarr",
 		},
 	];
 
@@ -119,7 +117,7 @@ import MediaSearch from '$lib/components/media/MediaSearch.svelte';
 	 */
 	function getStatusSummary() {
 		if (!$isSystemHealthy) {
-			return 'System Degraded';
+			return "System Degraded";
 		}
 		return `${$onlineServiceCount}/4 Services Online`;
 	}
@@ -129,9 +127,9 @@ import MediaSearch from '$lib/components/media/MediaSearch.svelte';
 	 */
 	function getStatusColor() {
 		if (!$isSystemHealthy) {
-			return 'text-yellow-400';
+			return "text-yellow-400";
 		}
-		return 'text-green-400';
+		return "text-green-400";
 	}
 </script>
 
@@ -139,14 +137,20 @@ import MediaSearch from '$lib/components/media/MediaSearch.svelte';
 	<title>Dashboard - Orchestratorr</title>
 </svelte:head>
 
-<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+<div
+	class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900"
+>
 	<!-- Header -->
-	<header class="border-b border-gray-700 bg-gray-800/50 backdrop-blur-sm sticky top-0 z-40">
+	<header
+		class="border-b border-gray-700 bg-gray-800/50 backdrop-blur-sm sticky top-0 z-40"
+	>
 		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
 			<div class="flex items-center justify-between">
 				<div>
 					<h1 class="text-3xl font-bold text-white">Orchestratorr</h1>
-					<p class="text-gray-400 text-sm mt-1">Unified Media Management Dashboard</p>
+					<p class="text-gray-400 text-sm mt-1">
+						Unified Media Management Dashboard
+					</p>
 				</div>
 				<div class="flex items-center gap-3">
 					<div class="text-right">
@@ -155,7 +159,9 @@ import MediaSearch from '$lib/components/media/MediaSearch.svelte';
 						</p>
 						<p class="text-xs text-gray-500">
 							{#if $serviceStatusStore.lastUpdated}
-								Updated {new Date($serviceStatusStore.lastUpdated).toLocaleTimeString()}
+								Updated {new Date(
+									$serviceStatusStore.lastUpdated,
+								).toLocaleTimeString()}
 							{:else}
 								Initializing...
 							{/if}
@@ -166,8 +172,10 @@ import MediaSearch from '$lib/components/media/MediaSearch.svelte';
 						disabled={$isHealthLoading}
 						class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors duration-200 flex items-center gap-2"
 					>
-						<span class={$isHealthLoading ? 'animate-spin' : ''}>🔄</span>
-						{$isHealthLoading ? 'Refreshing...' : 'Refresh All'}
+						<span class={$isHealthLoading ? "animate-spin" : ""}
+							>🔄</span
+						>
+						{$isHealthLoading ? "Refreshing..." : "Refresh All"}
 					</button>
 					<SettingsPanel />
 				</div>
@@ -189,8 +197,10 @@ import MediaSearch from '$lib/components/media/MediaSearch.svelte';
 				{#each services as service (service.key)}
 					<ServiceCard
 						serviceName={service.name}
-						status={$serviceStatusStore[service.key]?.status || 'unknown'}
-						version={$serviceStatusStore[service.key]?.version || 'N/A'}
+						status={$serviceStatusStore[service.key]?.status ||
+							"unknown"}
+						version={$serviceStatusStore[service.key]?.version ||
+							"N/A"}
 						lastSeen={$serviceStatusStore[service.key]?.lastChecked}
 						serviceUrl={service.url}
 					/>
@@ -216,7 +226,8 @@ import MediaSearch from '$lib/components/media/MediaSearch.svelte';
 	<footer class="border-t border-gray-700 bg-gray-800/50 mt-12">
 		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 			<p class="text-gray-500 text-sm text-center">
-				Orchestratorr • Unified *arr Frontend • Auto-refresh every 30 seconds
+				Orchestratorr • Unified *arr Frontend • Auto-refresh every 30
+				seconds
 			</p>
 		</div>
 	</footer>
