@@ -13,6 +13,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+    tmdb_api_key: Optional[str] = Field(None, description="TMDB API key for media searches")
     """
     Application settings loaded from environment variables.
 

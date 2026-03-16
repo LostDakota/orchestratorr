@@ -12,6 +12,7 @@ Responsive grid layout that adapts from desktop (3 col) to mobile (1 col).
 	import DiskSpace from '$lib/components/dashboard/DiskSpace.svelte';
 	import SettingsPanel from '$lib/components/SettingsPanel.svelte';
 	import UniversalSearch from '$lib/components/UniversalSearch.svelte';
+import MediaSearch from '$lib/components/media/MediaSearch.svelte';
 
 	import {
 		serviceStatusStore,
@@ -179,6 +180,10 @@ Responsive grid layout that adapts from desktop (3 col) to mobile (1 col).
 		<!-- Universal Search Bar -->
 		<section class="mb-8">
 			<UniversalSearch />
+			<div class="mt-4">
+				<h2 class="text-2xl font-bold text-white mb-4">Add Media</h2>
+				<MediaSearch />
+			</div>
 		</section>
 
 		<!-- Service Cards Grid -->
