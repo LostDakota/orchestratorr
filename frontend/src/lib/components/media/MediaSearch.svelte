@@ -10,10 +10,21 @@
     let isLoading = false;
     let error = null;
     let selectedMedia = null;
+    let page = 1;
+    let totalPages = 0;
+
+    const validateInput = (query) => {
+        // Remove any potentially harmful characters
+        return query.replace(/[<>]/g, '').trim();
+    };
 
     const performSearch = debounce(async () => {
-        if (searchQuery.length < 2) {
+        // Validate input
+        const cleanQuery = validateInput(searchQuery);
+        
+        if (cleanQuery.length < 2) {
             searchResults = [];
+            error = null;
             return;
         }
 
@@ -21,16 +32,18 @@
         error = null;
 
         try {
-            const response = await fetch(`/api/v1/media/search?query=${encodeURIComponent(searchQuery)}&media_type=${mediaType}`);
+            const response = await fetch(`/api/v1/media/search?query=${encodeURIComponent(cleanQuery)}&media_type=${mediaType}&page=${page}`);
             
             if (!response.ok) {
-                throw new Error('Search failed');
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Search failed');
             }
 
             const data = await response.json();
             searchResults = data.results || [];
+            totalPages = data.total_pages || 0;
         } catch (e) {
-            error = e.message;
+            error = e.message || 'An unexpected error occurred';
             searchResults = [];
         } finally {
             isLoading = false;
@@ -39,6 +52,9 @@
 
     async function addMediaToLibrary(media) {
         try {
+            isLoading = true;
+            error = null;
+
             const response = await fetch('/api/v1/media/add', {
                 method: 'POST',
                 headers: {
@@ -52,20 +68,31 @@
             });
 
             if (!response.ok) {
-                throw new Error('Failed to add media');
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Failed to add media');
             }
 
             const result = await response.json();
             selectedMedia = result;
             
-            // Optional: Show success notification
-            alert(`Added ${media.title} to library`);
+            // Show success notification (replace with a more robust notification system)
+            alert(`Successfully added ${media.title} to library`);
         } catch (e) {
-            error = e.message;
+            error = e.message || 'Failed to add media to library';
+        } finally {
+            isLoading = false;
+        }
+    }
+
+    function changePage(newPage) {
+        if (newPage > 0 && newPage <= totalPages) {
+            page = newPage;
+            performSearch();
         }
     }
 
     $: if (searchQuery) {
+        page = 1;
         performSearch();
     }
 </script>
@@ -77,6 +104,7 @@
             bind:value={searchQuery} 
             placeholder="Search {mediaType}s..."
             class="search-input"
+            disabled={isLoading}
         />
         {#if isLoading}
             <div class="loading-spinner">🔄</div>
@@ -111,13 +139,36 @@
                     <button 
                         on:click={() => addMediaToLibrary(media)}
                         class="add-to-library-btn"
+                        disabled={isLoading}
                     >
-                        Add to Library
+                        {#if isLoading}
+                            Adding...
+                        {:else}
+                            Add to Library
+                        {/if}
                     </button>
                 </div>
             </div>
         {/each}
     </div>
+
+    {#if totalPages > 1}
+        <div class="pagination">
+            <button 
+                on:click={() => changePage(page - 1)}
+                disabled={page === 1 || isLoading}
+            >
+                Previous
+            </button>
+            <span>Page {page} of {totalPages}</span>
+            <button 
+                on:click={() => changePage(page + 1)}
+                disabled={page === totalPages || isLoading}
+            >
+                Next
+            </button>
+        </div>
+    {/if}
 </div>
 
 <style>
@@ -200,13 +251,46 @@
         transition: background-color 0.2s;
     }
 
-    .add-to-library-btn:hover {
+    .add-to-library-btn:disabled {
+        background-color: #888;
+        cursor: not-allowed;
+    }
+
+    .add-to-library-btn:hover:not(:disabled) {
         background-color: #45a049;
     }
 
     .error-message {
         color: red;
         margin-bottom: 1rem;
+        padding: 0.5rem;
+        background-color: rgba(255, 0, 0, 0.1);
+        border-radius: 4px;
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1rem;
+        padding: 0.5rem;
+        background-color: #1a1a1a;
+        border-radius: 4px;
+    }
+
+    .pagination button {
+        background-color: #333;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .pagination button:disabled {
+        background-color: #222;
+        color: #666;
+        cursor: not-allowed;
     }
 
     @keyframes spin {
