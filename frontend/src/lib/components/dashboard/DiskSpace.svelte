@@ -1,111 +1,128 @@
-<!--
-Disk Space Overview Component
-
-Displays remaining disk space on root media drives as a horizontal progress bar.
-Shows available vs total space with percentage.
--->
-
 <script>
-	/**
-	 * Total disk space in GB
-	 * @type {number}
-	 */
-	export let total = 0;
+    import { onMount } from 'svelte';
 
-	/**
-	 * Used disk space in GB
-	 * @type {number}
-	 */
-	export let used = 0;
+    export let paths = ['/movies', '/tv', '/music'];
+    
+    let diskSpaces = [];
+    let isLoading = true;
+    let error = null;
 
-	/**
-	 * Remaining disk space in GB
-	 * @type {number}
-	 */
-	export let available = 0;
+    async function fetchDiskSpace() {
+        try {
+            isLoading = true;
+            const response = await fetch(`/api/v1/system/disk-space?${paths.map(p => `paths=${encodeURIComponent(p)}`).join('&')}`);
+            
+            if (!response.ok) {
+                throw new Error('Failed to fetch disk space');
+            }
 
-	/**
-	 * Root folder path
-	 * @type {string}
-	 */
-	export let path = '/media';
+            diskSpaces = await response.json();
+        } catch (e) {
+            error = e.message;
+            diskSpaces = [];
+        } finally {
+            isLoading = false;
+        }
+    }
 
-	/**
-	 * Calculate percentage used
-	 */
-	$: percentageUsed = total > 0 ? Math.round((used / total) * 100) : 0;
-	$: percentageAvailable = 100 - percentageUsed;
-
-	/**
-	 * Determine status color based on usage
-	 */
-	$: statusColor =
-		percentageUsed > 90
-			? 'bg-red-600'
-			: percentageUsed > 75
-				? 'bg-yellow-600'
-				: 'bg-green-600';
-
-	/**
-	 * Format bytes to GB/TB
-	 */
-	function formatSize(gb) {
-		if (gb >= 1024) {
-			return (gb / 1024).toFixed(2) + ' TB';
-		}
-		return gb.toFixed(2) + ' GB';
-	}
+    onMount(() => {
+        fetchDiskSpace();
+        
+        // Refresh every 5 minutes
+        const intervalId = setInterval(fetchDiskSpace, 5 * 60 * 1000);
+        
+        return () => clearInterval(intervalId);
+    });
 </script>
 
-<div class="bg-gray-800 border border-gray-700 rounded-lg p-6 shadow-md">
-	<div class="flex items-center justify-between mb-4">
-		<h2 class="text-lg font-semibold text-white">Disk Space</h2>
-		<span class="text-2xl font-bold {statusColor === 'bg-red-600' ? 'text-red-400' : statusColor === 'bg-yellow-600' ? 'text-yellow-400' : 'text-green-400'}">
-			{percentageUsed}%
-		</span>
-	</div>
-
-	<!-- Path Info -->
-	<p class="text-sm text-gray-400 mb-4 font-mono">{path}</p>
-
-	<!-- Progress Bar -->
-	<div class="mb-4">
-		<div class="w-full bg-gray-700 rounded-full h-4 overflow-hidden">
-			<div
-				class="{statusColor} h-full rounded-full transition-all duration-300"
-				style="width: {percentageUsed}%"
-			></div>
-		</div>
-	</div>
-
-	<!-- Stats Grid -->
-	<div class="grid grid-cols-3 gap-2 text-sm">
-		<div class="bg-gray-900 rounded p-3">
-			<p class="text-gray-500 text-xs uppercase mb-1">Used</p>
-			<p class="text-white font-semibold">{formatSize(used)}</p>
-		</div>
-		<div class="bg-gray-900 rounded p-3">
-			<p class="text-gray-500 text-xs uppercase mb-1">Available</p>
-			<p class="text-white font-semibold">{formatSize(available)}</p>
-		</div>
-		<div class="bg-gray-900 rounded p-3">
-			<p class="text-gray-500 text-xs uppercase mb-1">Total</p>
-			<p class="text-white font-semibold">{formatSize(total)}</p>
-		</div>
-	</div>
-
-	<!-- Warning -->
-	{#if percentageUsed > 90}
-		<div class="mt-4 bg-red-900/20 border border-red-700/30 rounded p-3">
-			<p class="text-sm text-red-200">⚠️ Disk usage critical (>90%)</p>
-		</div>
-	{:else if percentageUsed > 75}
-		<div class="mt-4 bg-yellow-900/20 border border-yellow-700/30 rounded p-3">
-			<p class="text-sm text-yellow-200">⚠️ Disk usage high (>75%)</p>
-		</div>
-	{/if}
+<div class="disk-space-container">
+    <h2 class="text-2xl font-bold text-white mb-4">Disk Space</h2>
+    
+    {#if isLoading}
+        <div class="loading">Loading disk space...</div>
+    {:else if error}
+        <div class="error">{error}</div>
+    {:else}
+        <div class="disk-spaces">
+            {#each diskSpaces as space}
+                <div class="disk-space-item">
+                    <div class="path">{space.path}</div>
+                    <div class="space-info">
+                        <div class="progress-bar">
+                            <div 
+                                class="progress" 
+                                style="width: {space.percent_used}%"
+                                class:warning={space.percent_used > 80}
+                                class:critical={space.percent_used > 90}
+                            ></div>
+                        </div>
+                        <div class="space-details">
+                            <span>{space.used.toFixed(1)} GB / {space.total.toFixed(1)} GB</span>
+                            <span>{space.free.toFixed(1)} GB Free</span>
+                        </div>
+                    </div>
+                </div>
+            {/each}
+        </div>
+    {/if}
 </div>
 
 <style>
-	/* All styling via Tailwind */
+    .disk-space-container {
+        background-color: #1a1a1a;
+        border-radius: 8px;
+        padding: 1rem;
+    }
+
+    .loading, .error {
+        color: #888;
+        text-align: center;
+        padding: 1rem;
+    }
+
+    .disk-spaces {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .disk-space-item {
+        background-color: #2a2a2a;
+        border-radius: 4px;
+        padding: 1rem;
+    }
+
+    .path {
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+        color: #ddd;
+    }
+
+    .progress-bar {
+        height: 20px;
+        background-color: #333;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 0.5rem;
+    }
+
+    .progress {
+        height: 100%;
+        background-color: #4CAF50;
+        transition: width 0.5s ease;
+    }
+
+    .progress.warning {
+        background-color: #FFC107;
+    }
+
+    .progress.critical {
+        background-color: #F44336;
+    }
+
+    .space-details {
+        display: flex;
+        justify-content: space-between;
+        color: #888;
+        font-size: 0.875rem;
+    }
 </style>

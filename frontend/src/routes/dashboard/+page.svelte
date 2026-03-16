@@ -180,10 +180,6 @@ import MediaSearch from '$lib/components/media/MediaSearch.svelte';
 		<!-- Universal Search Bar -->
 		<section class="mb-8">
 			<UniversalSearch />
-			<div class="mt-4">
-				<h2 class="text-2xl font-bold text-white mb-4">Add Media</h2>
-				<MediaSearch />
-			</div>
 		</section>
 
 		<!-- Service Cards Grid -->
