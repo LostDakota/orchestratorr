@@ -11,33 +11,8 @@ COPY package*.json ./
 # Using npm install instead of npm ci because package-lock.json is excluded by .gitignore
 RUN npm install
 
-# Install static adapter for SvelteKit (required for nginx static hosting)
-RUN npm install @sveltejs/adapter-static
-
 # Copy source code
 COPY . .
-
-# Create production svelte.config.js for adapter-static
-RUN rm -f svelte.config.js && cat > svelte.config.js << 'EOF'
-import adapter from '@sveltejs/adapter-static';
-import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
-
-/** @type {import('@sveltejs/kit').Config} */
-const config = {
-	preprocess: vitePreprocess(),
-	kit: {
-		adapter: adapter({
-			pages: 'build',
-			assets: 'build',
-			fallback: '200.html',
-			precompress: false,
-			strict: true
-		})
-	}
-};
-
-export default config;
-EOF
 
 # Build the application with environment variables
 ARG VITE_API_BASE=http://localhost:8000
