@@ -9,7 +9,7 @@ These schemas define the structure of Radarr API responses and are used to:
 """
 
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Dict, Any
 
 from pydantic import BaseModel, Field
 
@@ -44,7 +44,7 @@ class RadarrMovie(BaseModel):
     the frontend dashboard and library view.
     """
 
-    id: int = Field(description="Radarr internal movie ID")
+    id: Optional[int] = None
     title: str = Field(description="Movie title")
     sortTitle: str = Field(default="", description="Title for sorting")
     year: int = Field(description="Release year")
@@ -54,7 +54,7 @@ class RadarrMovie(BaseModel):
     monitored: bool = Field(description="Is this movie monitored for updates")
     runtime: int = Field(default=0, description="Runtime in minutes")
     overview: str = Field(default="", description="Movie synopsis")
-    ratings: list[RadarrRating] = Field(default_factory=list)
+    ratings: Optional[Dict[str, Any]] = None
     images: list[RadarrImage] = Field(default_factory=list)
     qualityProfileId: int = Field(default=0)
     rootFolderPath: Optional[str] = Field(default=None)
@@ -87,7 +87,7 @@ class RadarrSystemStatus(BaseModel):
 
     appName: str = Field(description="Always 'Radarr'")
     version: str = Field(description="Radarr version number")
-    os: str = Field(description="Operating system name")
+    osName: str = Field(description="Operating system name")
     osVersion: str = Field(description="OS version details")
     isLinux: bool
     isWindows: bool

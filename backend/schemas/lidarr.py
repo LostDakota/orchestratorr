@@ -30,7 +30,6 @@ class LidarrRating(BaseModel):
 
     votes: int
     value: float
-    type: str
 
     class Config:
         extra = "ignore"
@@ -39,7 +38,7 @@ class LidarrRating(BaseModel):
 class LidarrAlbum(BaseModel):
     """Album information for an artist."""
 
-    id: int
+    id: Optional[int] = None
     title: str
     foreignAlbumId: str
     monitored: bool
@@ -58,7 +57,7 @@ class LidarrArtist(BaseModel):
     the frontend dashboard and library view.
     """
 
-    id: int = Field(description="Lidarr internal artist ID")
+    id: Optional[int] = None
     artistName: str = Field(description="Artist name")
     sortName: str = Field(default="", description="Name for sorting")
     foreignArtistId: str = Field(description="MusicBrainz ID")
@@ -66,7 +65,7 @@ class LidarrArtist(BaseModel):
     status: str = Field(description="Status: Active, Disbanded, etc.")
     monitored: bool = Field(description="Is this artist monitored for updates")
     overview: str = Field(default="", description="Artist biography")
-    ratings: list[LidarrRating] = Field(default_factory=list)
+    ratings: Optional[LidarrRating] = None
     images: list[LidarrImage] = Field(default_factory=list)
     qualityProfileId: int = Field(default=0)
     rootFolderPath: Optional[str] = Field(default=None)
@@ -81,7 +80,7 @@ class LidarrSystemStatus(BaseModel):
 
     appName: str = Field(description="Always 'Lidarr'")
     version: str = Field(description="Lidarr version number")
-    os: str = Field(description="Operating system name")
+    osName: str = Field(description="Operating system name")
     osVersion: str = Field(description="OS version details")
     isLinux: bool
     isWindows: bool

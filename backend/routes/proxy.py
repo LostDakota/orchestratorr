@@ -149,7 +149,7 @@ async def get_aggregate_status(
             return {
                 service_name: {
                     "status": "online",
-                    "version": status.get("version", "Unknown"),
+                    "version": getattr(status, "version", "Unknown"),
                     "uptime": True,
                 }
             }

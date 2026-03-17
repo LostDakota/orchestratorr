@@ -30,7 +30,6 @@ class SonarrRating(BaseModel):
 
     votes: int
     value: float
-    type: str  # imdb, tvdb, etc.
 
     class Config:
         extra = "ignore"
@@ -44,7 +43,7 @@ class SonarrSeries(BaseModel):
     the frontend dashboard and library view.
     """
 
-    id: int = Field(description="Sonarr internal series ID")
+    id: Optional[int] = None
     title: str = Field(description="Series title")
     sortTitle: str = Field(default="", description="Title for sorting")
     year: int = Field(description="First air year")
@@ -55,7 +54,7 @@ class SonarrSeries(BaseModel):
     monitored: bool = Field(description="Is this series monitored for updates")
     runtime: int = Field(default=0, description="Episode runtime in minutes")
     overview: str = Field(default="", description="Series synopsis")
-    ratings: list[SonarrRating] = Field(default_factory=list)
+    ratings: Optional[SonarrRating] = None
     images: list[SonarrImage] = Field(default_factory=list)
     qualityProfileId: int = Field(default=0)
     rootFolderPath: Optional[str] = Field(default=None)
@@ -74,7 +73,7 @@ class SonarrSystemStatus(BaseModel):
 
     appName: str = Field(description="Always 'Sonarr'")
     version: str = Field(description="Sonarr version number")
-    os: str = Field(description="Operating system name")
+    osName: str = Field(description="Operating system name")
     osVersion: str = Field(description="OS version details")
     isLinux: bool
     isWindows: bool

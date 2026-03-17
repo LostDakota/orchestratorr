@@ -71,7 +71,7 @@ class ProwlarrSystemStatus(BaseModel):
 
     appName: str = Field(description="Always 'Prowlarr'")
     version: str = Field(description="Prowlarr version number")
-    os: str = Field(description="Operating system name")
+    osName: str = Field(description="Operating system name")
     osVersion: str = Field(description="OS version details")
     isLinux: bool
     isWindows: bool
