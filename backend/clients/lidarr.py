@@ -209,5 +209,6 @@ class LidarrClient(BaseArrClient):
         await self.delete(f"/api/v1/artist/{artist_id}", params=params)
 
     async def get_disk_space(self) -> List[DiskSpace]:
-        result = await self.get("/api/v1/diskspace")
-        return result.json()
+        response = await self.get("/api/v1/diskspace")
+        data = response.json()
+        return [DiskSpace(**item) for item in data]

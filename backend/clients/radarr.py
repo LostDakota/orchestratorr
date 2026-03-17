@@ -306,4 +306,5 @@ class RadarrClient(BaseArrClient):
 
     async def get_disk_space(self) -> List[DiskSpace]:
         response = await self.get("/api/v3/diskspace")
-        return response.json()
+        data = response.json()
+        return [DiskSpace(**item) for item in data]

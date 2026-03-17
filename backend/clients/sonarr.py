@@ -209,5 +209,6 @@ class SonarrClient(BaseArrClient):
         await self.delete(f"/api/v3/series/{series_id}", params=params)
 
     async def get_disk_space(self) -> List[DiskSpace]:
-        result = await self.get("/api/v3/diskspace")
-        return result.json()
+        response = await self.get("/api/v3/diskspace")
+        data = response.json()
+        return [DiskSpace(**item) for item in data]
