@@ -6,8 +6,14 @@ including system status, series library management, and search operations.
 """
 
 from typing import Any, Optional, List
-from backend.schemas import DiskSpace
-import httpx
+
+from backend.schemas import (
+    DiskSpace,
+    SonarrCalendarEvent,
+    SonarrCommand,
+    SonarrSeries,
+    SonarrSystemStatus,
+)
 
 from .base import BaseArrClient
 
@@ -22,100 +28,63 @@ class SonarrClient(BaseArrClient):
     Inherits from BaseArrClient and maintains the same async/error handling patterns.
     """
 
-    async def get_status(self) -> dict[str, Any]:
+    async def get_status(self) -> SonarrSystemStatus:
         """
         Fetch Sonarr system status and version information.
 
         Returns:
-            dict: System status response from Sonarr, including:
-                - version: Sonarr version string
-                - osVersion: Operating system information
-                - authentication: Authentication mode
-                - branch: Git branch
+            SonarrSystemStatus: System status response from Sonarr
 
         Raises:
             HTTPException: If the request fails or Sonarr returns an error
-
-        Example:
-            status = await client.get_status()
-            print(f"Sonarr v{status['version']}")
         """
         response = await self.get("/api/v3/system/status")
-        return response.json()
+        return SonarrSystemStatus(**response.json())
 
     async def get_series(
         self,
         series_id: Optional[int] = None,
-    ) -> dict[str, Any] | list[dict[str, Any]]:
+    ) -> SonarrSeries | list[SonarrSeries]:
         """
         Fetch series from the Sonarr library.
-
-        Retrieves either the full series collection or a specific series by ID.
 
         Args:
             series_id (int, optional): If provided, fetch only this specific series.
                                       If None, return the entire library.
 
         Returns:
-            dict or list: If series_id is provided, returns a single series object.
-                         Otherwise returns a list of series objects.
-                         Each series includes:
-                         - id: Sonarr internal series ID
-                         - title: Series title
-                         - tvdbId: TVDB database ID
-                         - status: Current status (Continuing, Ended, etc.)
-                         - monitored: Whether the series is monitored
+            SonarrSeries or list[SonarrSeries]: Series from Sonarr
 
         Raises:
             HTTPException: If the request fails or series_id doesn't exist
-
-        Example:
-            # Get entire library
-            series = await client.get_series()
-            print(f"Found {len(series)} series")
-
-            # Get specific series
-            show = await client.get_series(series_id=123)
-            print(f"Series: {show['title']}")
         """
         if series_id is not None:
             response = await self.get(f"/api/v3/series/{series_id}")
-            return response.json()
+            return SonarrSeries(**response.json())
         else:
             response = await self.get("/api/v3/series")
-            return response.json()
+            data = response.json()
+            return [SonarrSeries(**item) for item in data]
 
-    async def search_series(self, query: str) -> list[dict[str, Any]]:
+    async def search_series(self, query: str) -> list[SonarrSeries]:
         """
         Search for TV series using TVDB/TMDB lookup.
-
-        Uses the /api/v3/series/lookup endpoint to search for series by title.
 
         Args:
             query (str): Search query (series title)
 
         Returns:
-            list: List of matching series from TVDB/TMDB, including:
-                - title: Series title
-                - tvdbId: TVDB database ID
-                - tmdbId: TMDB database ID
-                - overview: Plot summary
-                - images: Poster URLs
-                - status: Current status (Continuing, Ended, etc.)
+            list[SonarrSeries]: List of matching series from TVDB/TMDB
 
         Raises:
             HTTPException: If the request fails
-
-        Example:
-            results = await client.search_series("Breaking Bad")
-            for series in results:
-                print(f"{series['title']}")
         """
         params = {"term": query}
         response = await self.get("/api/v3/series/lookup", params=params)
-        return response.json()
+        data = response.json()
+        return [SonarrSeries(**item) for item in data]
 
-    async def command_search(self, series_ids: list[int]) -> dict[str, Any]:
+    async def command_search(self, series_ids: list[int]) -> SonarrCommand:
         """
         Trigger a search for missing episodes.
 
@@ -123,14 +92,11 @@ class SonarrClient(BaseArrClient):
             series_ids (list[int]): List of Sonarr series IDs to search for
 
         Returns:
-            dict: Command response from Sonarr with command ID and status
+            SonarrCommand: Command response from Sonarr
 
         Raises:
             HTTPException: If the request fails
-
-        Example:
-            result = await client.command_search([123, 456])
-            print(f"Search queued with command ID: {result['id']}")
+            ValueError: If series_ids is empty
         """
         if not series_ids:
             raise ValueError("series_ids cannot be empty")
@@ -141,7 +107,7 @@ class SonarrClient(BaseArrClient):
         }
 
         response = await self.post("/api/v3/command", data=payload)
-        return response.json()
+        return SonarrCommand(**response.json())
 
     async def add_series(
         self,
@@ -150,7 +116,7 @@ class SonarrClient(BaseArrClient):
         quality_profile_id: int,
         root_folder_path: str,
         monitored: bool = True,
-    ) -> dict[str, Any]:
+    ) -> SonarrSeries:
         """
         Add a new series to the Sonarr library.
 
@@ -162,19 +128,10 @@ class SonarrClient(BaseArrClient):
             monitored (bool): Whether to monitor this series
 
         Returns:
-            dict: Created series object with ID and metadata
+            SonarrSeries: Created series object with ID and metadata
 
         Raises:
             HTTPException: If the request fails or series already exists
-
-        Example:
-            series = await client.add_series(
-                tvdb_id=81189,
-                title="Breaking Bad",
-                quality_profile_id=1,
-                root_folder_path="/tv"
-            )
-            print(f"Added series with Sonarr ID: {series['id']}")
         """
         payload = {
             "tvdbId": tvdb_id,
@@ -185,7 +142,7 @@ class SonarrClient(BaseArrClient):
         }
 
         response = await self.post("/api/v3/series", data=payload)
-        return response.json()
+        return SonarrSeries(**response.json())
 
     async def delete_series(
         self,
@@ -201,14 +158,40 @@ class SonarrClient(BaseArrClient):
 
         Raises:
             HTTPException: If the request fails or series not found
-
-        Example:
-            await client.delete_series(123, delete_files=True)
         """
         params = {"deleteFiles": str(delete_files).lower()}
         await self.delete(f"/api/v3/series/{series_id}", params=params)
 
     async def get_disk_space(self) -> List[DiskSpace]:
+        """Fetch disk space information from Sonarr."""
         response = await self.get("/api/v3/diskspace")
         data = response.json()
         return [DiskSpace(**item) for item in data]
+
+    async def get_calendar(
+        self,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+    ) -> list[SonarrCalendarEvent]:
+        """
+        Fetch upcoming episodes from the calendar.
+
+        Args:
+            start_date (str, optional): Start date (ISO 8601 format: YYYY-MM-DD)
+            end_date (str, optional): End date (ISO 8601 format: YYYY-MM-DD)
+
+        Returns:
+            list[SonarrCalendarEvent]: Calendar events
+
+        Raises:
+            HTTPException: If the request fails
+        """
+        params = {}
+        if start_date:
+            params["start"] = start_date
+        if end_date:
+            params["end"] = end_date
+
+        response = await self.get("/api/v3/calendar", params=params)
+        data = response.json()
+        return [SonarrCalendarEvent(**item) for item in data]

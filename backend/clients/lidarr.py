@@ -6,9 +6,13 @@ including system status, artist library management, and search/command operation
 """
 
 from typing import Any, Optional, List
-from backend.schemas import DiskSpace
 
-import httpx
+from backend.schemas import (
+    DiskSpace,
+    LidarrArtist,
+    LidarrCommand,
+    LidarrSystemStatus,
+)
 
 from .base import BaseArrClient
 
@@ -23,99 +27,63 @@ class LidarrClient(BaseArrClient):
     Inherits from BaseArrClient and maintains the same async/error handling patterns.
     """
 
-    async def get_status(self) -> dict[str, Any]:
+    async def get_status(self) -> LidarrSystemStatus:
         """
         Fetch Lidarr system status and version information.
 
         Returns:
-            dict: System status response from Lidarr, including:
-                - version: Lidarr version string
-                - osVersion: Operating system information
-                - authentication: Authentication mode
-                - branch: Git branch
+            LidarrSystemStatus: System status response from Lidarr
 
         Raises:
             HTTPException: If the request fails or Lidarr returns an error
-
-        Example:
-            status = await client.get_status()
-            print(f"Lidarr v{status['version']}")
         """
         response = await self.get("/api/v1/system/status")
-        return response.json()
+        return LidarrSystemStatus(**response.json())
 
     async def get_artists(
         self,
         artist_id: Optional[int] = None,
-    ) -> dict[str, Any] | list[dict[str, Any]]:
+    ) -> LidarrArtist | list[LidarrArtist]:
         """
         Fetch artists from the Lidarr library.
-
-        Retrieves either the full artist collection or a specific artist by ID.
 
         Args:
             artist_id (int, optional): If provided, fetch only this specific artist.
                                       If None, return the entire library.
 
         Returns:
-            dict or list: If artist_id is provided, returns a single artist object.
-                         Otherwise returns a list of artist objects.
-                         Each artist includes:
-                         - id: Lidarr internal artist ID
-                         - artistName: Artist name
-                         - foreignArtistId: MusicBrainz ID
-                         - monitored: Whether the artist is monitored
-                         - status: Current status (Continuing, Ended, etc.)
+            LidarrArtist or list[LidarrArtist]: Artist(s) from Lidarr
 
         Raises:
             HTTPException: If the request fails or artist_id doesn't exist
-
-        Example:
-            # Get entire library
-            artists = await client.get_artists()
-            print(f"Found {len(artists)} artists")
-
-            # Get specific artist
-            artist = await client.get_artists(artist_id=123)
-            print(f"Artist: {artist['artistName']}")
         """
         if artist_id is not None:
             response = await self.get(f"/api/v1/artist/{artist_id}")
-            return response.json()
+            return LidarrArtist(**response.json())
         else:
             response = await self.get("/api/v1/artist")
-            return response.json()
+            data = response.json()
+            return [LidarrArtist(**item) for item in data]
 
-    async def search_artists(self, query: str) -> list[dict[str, Any]]:
+    async def search_artists(self, query: str) -> list[LidarrArtist]:
         """
         Search for music artists using MusicBrainz lookup.
-
-        Uses the /api/v1/artist/lookup endpoint to search for artists by name.
 
         Args:
             query (str): Search query (artist name)
 
         Returns:
-            list: List of matching artists from MusicBrainz, including:
-                - artistName: Artist name
-                - foreignArtistId: MusicBrainz ID
-                - overview: Biography summary
-                - images: Artist image URLs
-                - status: Current status (Active, Disbanded, etc.)
+            list[LidarrArtist]: List of matching artists from MusicBrainz
 
         Raises:
             HTTPException: If the request fails
-
-        Example:
-            results = await client.search_artists("Radiohead")
-            for artist in results:
-                print(f"{artist['artistName']}")
         """
         params = {"term": query}
         response = await self.get("/api/v1/artist/lookup", params=params)
-        return response.json()
+        data = response.json()
+        return [LidarrArtist(**item) for item in data]
 
-    async def command_search(self, artist_ids: list[int]) -> dict[str, Any]:
+    async def command_search(self, artist_ids: list[int]) -> LidarrCommand:
         """
         Trigger a search for missing albums.
 
@@ -123,14 +91,11 @@ class LidarrClient(BaseArrClient):
             artist_ids (list[int]): List of Lidarr artist IDs to search for
 
         Returns:
-            dict: Command response from Lidarr with command ID and status
+            LidarrCommand: Command response from Lidarr
 
         Raises:
             HTTPException: If the request fails
-
-        Example:
-            result = await client.command_search([123, 456])
-            print(f"Search queued with command ID: {result['id']}")
+            ValueError: If artist_ids is empty
         """
         if not artist_ids:
             raise ValueError("artist_ids cannot be empty")
@@ -141,7 +106,7 @@ class LidarrClient(BaseArrClient):
         }
 
         response = await self.post("/api/v1/command", data=payload)
-        return response.json()
+        return LidarrCommand(**response.json())
 
     async def add_artist(
         self,
@@ -150,7 +115,7 @@ class LidarrClient(BaseArrClient):
         quality_profile_id: int,
         root_folder_path: str,
         monitored: bool = True,
-    ) -> dict[str, Any]:
+    ) -> LidarrArtist:
         """
         Add a new artist to the Lidarr library.
 
@@ -162,19 +127,10 @@ class LidarrClient(BaseArrClient):
             monitored (bool): Whether to monitor this artist
 
         Returns:
-            dict: Created artist object with ID and metadata
+            LidarrArtist: Created artist object with ID and metadata
 
         Raises:
             HTTPException: If the request fails or artist already exists
-
-        Example:
-            artist = await client.add_artist(
-                foreign_artist_id="uuid",
-                artist_name="Radiohead",
-                quality_profile_id=1,
-                root_folder_path="/music"
-            )
-            print(f"Added artist with Lidarr ID: {artist['id']}")
         """
         payload = {
             "foreignArtistId": foreign_artist_id,
@@ -185,7 +141,7 @@ class LidarrClient(BaseArrClient):
         }
 
         response = await self.post("/api/v1/artist", data=payload)
-        return response.json()
+        return LidarrArtist(**response.json())
 
     async def delete_artist(
         self,
@@ -201,14 +157,12 @@ class LidarrClient(BaseArrClient):
 
         Raises:
             HTTPException: If the request fails or artist not found
-
-        Example:
-            await client.delete_artist(123, delete_files=True)
         """
         params = {"deleteFiles": str(delete_files).lower()}
         await self.delete(f"/api/v1/artist/{artist_id}", params=params)
 
     async def get_disk_space(self) -> List[DiskSpace]:
+        """Fetch disk space information from Lidarr."""
         response = await self.get("/api/v1/diskspace")
         data = response.json()
         return [DiskSpace(**item) for item in data]
