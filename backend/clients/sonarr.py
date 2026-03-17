@@ -5,8 +5,8 @@ Provides asynchronous methods for interacting with Sonarr v3 API endpoints,
 including system status, series library management, and search operations.
 """
 
-from typing import Any, Optional
-
+from typing import Any, Optional, List
+from backend.schemas import DiskSpace
 import httpx
 
 from .base import BaseArrClient
@@ -207,3 +207,7 @@ class SonarrClient(BaseArrClient):
         """
         params = {"deleteFiles": str(delete_files).lower()}
         await self.delete(f"/api/v3/series/{series_id}", params=params)
+
+    async def get_disk_space(self) -> List[DiskSpace]:
+        result = await self.get("/api/v3/diskspace")
+        return result.json()

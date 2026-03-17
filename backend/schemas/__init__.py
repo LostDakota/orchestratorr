@@ -12,9 +12,13 @@ from .radarr import (
     RadarrSystemStatus,
 )
 
+from .disk_space import DiskSpace, ClientUsedSpace
+
 __all__ = [
     "RadarrMovie",
     "RadarrSystemStatus",
     "RadarrCommand",
     "RadarrCalendarEvent",
+    "DiskSpace",
+    "ClientUsedSpace"
 ]

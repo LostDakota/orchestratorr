@@ -5,8 +5,8 @@ Provides asynchronous methods for interacting with Radarr v3 API endpoints,
 including system status, movie library management, and search/command operations.
 """
 
-from typing import Any, Optional
-
+from typing import Any, Optional, List
+from backend.schemas import DiskSpace
 import httpx
 
 from .base import BaseArrClient
@@ -301,5 +301,9 @@ class RadarrClient(BaseArrClient):
         return response.json()
 
     async def snatched(self, movie_id: int) -> bool:
-        response = await self.get(f"/api/v3/movie/{movie_id}");
+        response = await self.get(f"/api/v3/movie/{movie_id}")
+        return response.json()
+
+    async def get_disk_space(self) -> List[DiskSpace]:
+        response = await self.get("/api/v3/diskspace")
         return response.json()

@@ -1,8 +1,9 @@
 <script>
-    import { onMount } from 'svelte';
+    import { onMount } from "svelte";
+    import { getBackendUrl } from "$lib/stores";
 
-    export let paths = ['/movies', '/tv', '/music'];
-    
+    export let paths = ["/movies", "/tv", "/music"];
+
     let diskSpaces = [];
     let isLoading = true;
     let error = null;
@@ -10,10 +11,13 @@
     async function fetchDiskSpace() {
         try {
             isLoading = true;
-            const response = await fetch(`/api/v1/system/disk-space?${paths.map(p => `paths=${encodeURIComponent(p)}`).join('&')}`);
-            
+            const backendUrl = await getBackendUrl();
+            const response = await fetch(
+                `${backendUrl}/api/v1/system/disk-space?${paths.map((p) => `paths=${encodeURIComponent(p)}`).join("&")}`,
+            );
+
             if (!response.ok) {
-                throw new Error('Failed to fetch disk space');
+                throw new Error("Failed to fetch disk space");
             }
 
             diskSpaces = await response.json();
@@ -27,17 +31,17 @@
 
     onMount(() => {
         fetchDiskSpace();
-        
+
         // Refresh every 5 minutes
         const intervalId = setInterval(fetchDiskSpace, 5 * 60 * 1000);
-        
+
         return () => clearInterval(intervalId);
     });
 </script>
 
 <div class="disk-space-container">
     <h2 class="text-2xl font-bold text-white mb-4">Disk Space</h2>
-    
+
     {#if isLoading}
         <div class="loading">Loading disk space...</div>
     {:else if error}
@@ -49,15 +53,19 @@
                     <div class="path">{space.path}</div>
                     <div class="space-info">
                         <div class="progress-bar">
-                            <div 
-                                class="progress" 
+                            <div
+                                class="progress"
                                 style="width: {space.percent_used}%"
                                 class:warning={space.percent_used > 80}
                                 class:critical={space.percent_used > 90}
                             ></div>
                         </div>
                         <div class="space-details">
-                            <span>{space.used.toFixed(1)} GB / {space.total.toFixed(1)} GB</span>
+                            <span
+                                >{space.used.toFixed(1)} GB / {space.total.toFixed(
+                                    1,
+                                )} GB</span
+                            >
                             <span>{space.free.toFixed(1)} GB Free</span>
                         </div>
                     </div>
@@ -74,7 +82,8 @@
         padding: 1rem;
     }
 
-    .loading, .error {
+    .loading,
+    .error {
         color: #888;
         text-align: center;
         padding: 1rem;
@@ -107,16 +116,16 @@
 
     .progress {
         height: 100%;
-        background-color: #4CAF50;
+        background-color: #4caf50;
         transition: width 0.5s ease;
     }
 
     .progress.warning {
-        background-color: #FFC107;
+        background-color: #ffc107;
     }
 
     .progress.critical {
-        background-color: #F44336;
+        background-color: #f44336;
     }
 
     .space-details {

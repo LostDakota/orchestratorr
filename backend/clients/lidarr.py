@@ -5,7 +5,8 @@ Provides asynchronous methods for interacting with Lidarr v1 API endpoints,
 including system status, artist library management, and search/command operations.
 """
 
-from typing import Any, Optional
+from typing import Any, Optional, List
+from backend.schemas import DiskSpace
 
 import httpx
 
@@ -206,3 +207,7 @@ class LidarrClient(BaseArrClient):
         """
         params = {"deleteFiles": str(delete_files).lower()}
         await self.delete(f"/api/v1/artist/{artist_id}", params=params)
+
+    async def get_disk_space(self) -> List[DiskSpace]:
+        result = await self.get("/api/v1/diskspace")
+        return result.json()
