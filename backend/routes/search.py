@@ -161,24 +161,24 @@ async def search_radarr(client: RadarrClient, query: str) -> List[SearchResult]:
         results = []
         for movie in movies:
             poster_url = None
-            if "images" in movie and isinstance(movie["images"], list):
-                for img in movie["images"]:
-                    if img.get("coverType") == "poster" and img.get("remoteUrl"):
-                        poster_url = img["remoteUrl"]
+            if movie.images:
+                for img in movie.images:
+                    if img.coverType == "poster" and img.url:
+                        poster_url = img.url
                         break
 
             result = SearchResult(
-                title=movie.get("title", "Unknown"),
-                year=movie.get("year"),
-                overview=movie.get("overview"),
+                title=movie.title or "Unknown",
+                year=movie.year,
+                overview=movie.overview,
                 source_service="radarr",
                 source_type="movie",
-                remote_id=movie.get("id"),
-                tmdb_id=movie.get("tmdbId"),
-                imdb_id=movie.get("imdbId"),
+                remote_id=movie.id,
+                tmdb_id=movie.tmdbId,
+                imdb_id=movie.imdbId,
                 poster_url=poster_url,
                 status="missing",
-                in_library=movie.get("hasFile"),
+                in_library=movie.hasFile,
             )
             results.append(result)
 
@@ -211,21 +211,21 @@ async def search_sonarr(client: Optional[SonarrClient], query: str) -> List[Sear
         results = []
         for series in series_list:
             poster_url = None
-            if "images" in series and isinstance(series["images"], list):
-                for img in series["images"]:
-                    if img.get("coverType") == "poster" and img.get("remoteUrl"):
-                        poster_url = img["remoteUrl"]
+            if series.images:
+                for img in series.images:
+                    if img.coverType == "poster" and img.url:
+                        poster_url = img.url
                         break
 
             result = SearchResult(
-                title=series.get("title", "Unknown"),
-                year=series.get("year"),
-                overview=series.get("overview"),
+                title=series.title or "Unknown",
+                year=series.year,
+                overview=series.overview,
                 source_service="sonarr",
                 source_type="tv",
-                remote_id=series.get("id"),
-                tmdb_id=series.get("tmdbId"),
-                imdb_id=series.get("imdbId"),
+                remote_id=series.id,
+                tmdb_id=series.tmdbId,
+                imdb_id=series.imdbId,
                 poster_url=poster_url,
                 status="missing",  # Default; would need to check if in library
                 in_library=False,  # Would need to check against library
@@ -261,19 +261,19 @@ async def search_lidarr(client: Optional[LidarrClient], query: str) -> List[Sear
         results = []
         for artist in artists:
             poster_url = None
-            if "images" in artist and isinstance(artist["images"], list):
-                for img in artist["images"]:
-                    if img.get("coverType") == "poster" and img.get("remoteUrl"):
-                        poster_url = img["remoteUrl"]
+            if artist.images:
+                for img in artist.images:
+                    if img.coverType == "poster" and img.url:
+                        poster_url = img.url
                         break
 
             result = SearchResult(
-                title=artist.get("artistName", "Unknown"),
-                year=artist.get("year"),
-                overview=artist.get("overview"),
+                title=artist.artistName or "Unknown",
+                year=artist.year,
+                overview=artist.overview,
                 source_service="lidarr",
                 source_type="music",
-                remote_id=artist.get("foreignArtistId", artist.get("id")),
+                remote_id=artist.foreignArtistId or artist.id,
                 # Lidarr uses foreignArtistId (MusicBrainz ID) not tmdbId
                 tmdb_id=None,
                 imdb_id=None,
